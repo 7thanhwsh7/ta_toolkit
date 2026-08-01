@@ -1,0 +1,1990 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>G.EDU — TA Toolkit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,600&family=Be+Vietnam+Pro:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.3.1/css/tom-select.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.3.1/js/tom-select.complete.min.js"></script>
+<style>
+  :root{
+    --ink:#171019;
+    --ink-2:rgba(250,241,236,0.95);
+    --ink-3:#2A2129;
+    --gold:#E85D93;
+    --gold-dim:#B23A67;
+    --sage:#6FA88F;
+    --rust:#E2685C;
+    --cream:#2E2229;
+    --cream-dim:#8B6B76;
+    --line:#E3C3CE;
+    --input-text:#F5EDF0;
+    --input-text-dim:#AD93A0;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--cream);
+    font-family:'Be Vietnam Pro',sans-serif;
+    min-height:100vh;
+    -webkit-tap-highlight-color:transparent;
+  }
+  ::selection{background:var(--gold-dim);color:var(--input-text);}
+  .wrap{max-width:960px;margin:0 auto;padding:32px 20px 80px;}
+
+  header{
+    display:flex;align-items:baseline;justify-content:space-between;
+    border-bottom:1px solid rgba(245,237,240,0.18);padding-bottom:18px;margin-bottom:28px;
+  }
+  header .brand{font-family:'Playfair Display',serif;font-weight:700;font-size:26px;letter-spacing:.02em;color:var(--gold);}
+  header .sub{font-family:'Playfair Display',serif;font-style:italic;font-weight:600;font-size:14px;color:var(--input-text-dim);letter-spacing:.06em;text-transform:uppercase;}
+
+  .entry-group{
+    margin-bottom:20px;
+  }
+  .entry-group .card{margin-bottom:40px;}
+  .entry-group-label{
+    font-family:'Be Vietnam Pro',sans-serif;font-weight:700;font-size:12.5px;
+    letter-spacing:.08em;text-transform:uppercase;color:var(--gold-dim);
+    margin:0 0 16px 2px;display:block;
+  }
+
+  .step-header{cursor:pointer;display:flex;align-items:center;gap:8px;}
+  .step-header-toggle{
+    margin-left:auto;flex:0 0 auto;color:var(--cream-dim);font-size:13px;
+    transition:transform .18s ease;
+  }
+  .step-card.collapsed .step-header-toggle{transform:rotate(-90deg);}
+  .step-card.collapsed .step-body{display:none;}
+  .step-card:not(.collapsed) .step-header{margin-bottom:4px;}
+
+  #screen-welcome{min-height:65vh;display:flex;align-items:center;justify-content:center;}
+  #screen-welcome .card{position:relative;overflow:visible;}
+  .welcome-sparkle{position:absolute;pointer-events:none;opacity:.85;animation:sparkle-float 3s ease-in-out infinite;}
+  @keyframes sparkle-float{
+    0%,100%{transform:translateY(0) rotate(0deg);opacity:.5;}
+    50%{transform:translateY(-6px) rotate(12deg);opacity:1;}
+  }
+
+  .card{
+    background:var(--ink-2);border:1px solid var(--line);border-radius:var(--radius);
+    padding:22px 22px 24px;margin-bottom:20px;
+    box-shadow:0 4px 20px rgba(232,93,147,0.07);
+  }
+  .card h2{
+    font-family:'Playfair Display',serif;font-weight:600;font-style:italic;
+    font-size:19px;margin:0 0 4px;color:var(--cream);
+  }
+  .card .hint{font-size:12.5px;color:var(--cream-dim);margin:0 0 16px;line-height:1.5;}
+  .step-num{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:22px;height:22px;border-radius:50%;background:var(--gold);color:#FFFFFF;
+    font-family:'DM Mono',monospace;font-size:12px;font-weight:700;margin-right:8px;
+  }
+
+  .row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+  .field{flex:1;min-width:160px;display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--cream-dim);font-weight:600;}
+  select,input[type=text],input[type=date],input[type=number],input[type=month],textarea{
+    background:var(--ink-3);border:1px solid var(--line);color:var(--input-text);
+    padding:10px 12px;border-radius:8px;font-family:'Be Vietnam Pro',sans-serif;font-size:16px;
+    outline:none;width:100%;
+  }
+  select:focus,input:focus,textarea:focus{border-color:var(--gold-dim);}
+  textarea{resize:vertical;min-height:110px;font-family:'Be Vietnam Pro',sans-serif;font-size:14px;line-height:1.6;}
+
+  /* Chrome/Safari tự autofill ép nền trắng — ép lại nền tối + chữ sáng để không bị trắng-trên-trắng */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus{
+    -webkit-text-fill-color: var(--input-text) !important;
+    -webkit-box-shadow: 0 0 0px 1000px var(--ink-3) inset !important;
+    caret-color: var(--input-text);
+    transition: background-color 5000s ease-in-out 0s;
+  }
+
+  /* Ô nhập tên lớp mới — riêng ô này ép nền trắng + chữ đen (từng bị báo trắng-trên-trắng) */
+  #mgmtNewClassInput,
+  #mgmtNewClassInput:-webkit-autofill{
+    background:#FFFFFF !important;
+    color:#111111 !important;
+    -webkit-text-fill-color:#111111 !important;
+    -webkit-box-shadow: 0 0 0px 1000px #FFFFFF inset !important;
+    caret-color:#111111;
+  }
+  #mgmtNewClassInput::placeholder{color:#8a8a8a;}
+
+  .inline-add{display:flex;gap:8px;margin-top:6px;}
+  .inline-add input{flex:1;}
+
+  button{
+    font-family:'Be Vietnam Pro',sans-serif;font-weight:600;font-size:13.5px;
+    border:none;border-radius:8px;padding:10px 16px;cursor:pointer;transition:.15s opacity;min-height:44px;
+  }
+  button:hover{opacity:.88;}
+  button:disabled{opacity:.55;cursor:wait;}
+  button:active{transform:translateY(1px);}
+  .btn-gold{background:var(--gold);color:#FFFFFF;}
+  .btn-ghost{background:var(--ink-2);color:var(--cream);border:1px solid var(--line);}
+  .btn-rust{background:var(--rust);color:#fff;}
+  .btn-sage{background:var(--sage);color:#FFFFFF;}
+  .btn-sm{padding:6px 10px;font-size:12px;min-height:auto;}
+
+  .followup-panel{border-color:var(--rust);}
+  .followup-item{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;
+    padding:10px 0;border-bottom:1px solid var(--line);
+  }
+  .followup-item:last-child{border-bottom:none;}
+  .followup-item .who{font-weight:600;font-size:14px;}
+  .followup-item .meta{font-size:12px;color:var(--cream-dim);margin-top:2px;}
+  .followup-item .meta b{color:var(--rust);}
+  .empty-note{font-size:13px;color:var(--cream-dim);font-style:italic;}
+
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:var(--sage);color:#FFFFFF;padding:10px 20px;border-radius:8px;
+    font-size:13.5px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99;
+  }
+  .toast.show{opacity:1;}
+  .toast.err{background:var(--rust);color:#fff;}
+
+  .divider-label{
+    font-family:'Be Vietnam Pro',sans-serif;font-weight:600;font-size:12px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--gold-dim);margin:26px 0 10px;display:flex;align-items:center;gap:10px;
+  }
+  .divider-label::after{content:'';flex:1;height:1px;background:var(--line);}
+
+  select option{background:var(--ink-3);}
+
+  /* Tom Select — ô chọn học sinh/lớp có tìm kiếm */
+  .ts-wrapper.single .ts-control,
+  .ts-wrapper.single.input-active .ts-control{
+    background:var(--ink-3) !important;border:1px solid var(--line);border-radius:8px;
+    color:var(--input-text) !important;padding:9px 12px;font-family:'Be Vietnam Pro',sans-serif;font-size:16px;
+    min-height:auto;box-shadow:none;
+  }
+  .ts-wrapper.focus .ts-control{border-color:var(--gold-dim);}
+  .ts-control input,
+  .ts-control input:focus,
+  .ts-control input:active{
+    color:var(--input-text) !important;
+    -webkit-text-fill-color:var(--input-text) !important;
+    background:transparent !important;
+    caret-color:var(--input-text) !important;
+    box-shadow:none !important;
+  }
+  .ts-control input::placeholder{
+    color:var(--input-text-dim) !important;
+    -webkit-text-fill-color:var(--input-text-dim) !important;
+  }
+  input[type=text]:not(#mgmtNewClassInput),
+  input[type=number],
+  textarea{
+    color:var(--input-text) !important;
+    -webkit-text-fill-color:var(--input-text) !important;
+    background:var(--ink-3) !important;
+    caret-color:var(--input-text) !important;
+  }
+  input[type=text]:not(#mgmtNewClassInput)::placeholder,
+  input[type=number]::placeholder,
+  textarea::placeholder{
+    color:var(--input-text-dim) !important;
+    -webkit-text-fill-color:var(--input-text-dim) !important;
+  }
+  .ts-dropdown{
+    background:var(--ink-3);border:1px solid var(--line);color:var(--input-text);
+    font-family:'Be Vietnam Pro',sans-serif;font-size:14px;z-index:200;
+  }
+  .ts-dropdown .option{padding:9px 12px;}
+  .ts-dropdown .active{background:var(--gold);color:#FFFFFF;}
+  .ts-dropdown .no-results{padding:9px 12px;color:var(--input-text-dim);}
+  .ts-wrapper.single .ts-control:after{border-color:var(--input-text-dim) transparent transparent transparent;}
+  .footnote{font-size:11.5px;color:var(--cream-dim);margin-top:6px;}
+  code{background:var(--ink-3);padding:1px 6px;border-radius:4px;font-family:'DM Mono',monospace;font-size:11px;color:var(--gold-dim);}
+  .checkbox-row{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13.5px;}
+  .session-log-frame .checkbox-row{color:var(--input-text);}
+  .action-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px;}
+  .note-action{
+    min-height:44px;padding:10px 14px;border-radius:8px;
+    border:1px solid var(--gold-dim);background:rgba(232,93,147,0.12);
+    color:var(--cream);font-weight:600;margin:0;
+  }
+  .note-action input{accent-color:var(--gold);} 
+
+  .chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+  .chip{
+    background:var(--ink-3);border:1px solid var(--line);color:var(--input-text);
+    padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;
+    font-family:'Be Vietnam Pro',sans-serif;transition:.15s all;
+  }
+  .chip:hover{background:var(--gold);border-color:var(--gold);color:#FFFFFF;}
+  .chip.chip-active{background:var(--gold);border-color:var(--gold);color:#FFFFFF;}
+
+  .checkbox-row input{width:auto;}
+
+  .tabs{display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;}
+  .tab-btn{
+    background:var(--ink-2);border:1px solid var(--line);color:var(--cream-dim);
+    padding:10px 18px;border-radius:8px;font-weight:600;font-size:13.5px;cursor:pointer;
+    font-family:'Be Vietnam Pro',sans-serif;
+  }
+  .tab-btn.active{background:var(--gold);color:#FFFFFF;border-color:var(--gold);}
+
+  .mgmt-item{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);}
+
+  .session-log-frame{
+    background:var(--ink-3);border:1px solid var(--line);border-radius:10px;
+    padding:6px 16px;
+  }
+  .session-log-frame .followup-item{border-bottom-color:var(--line);}
+  .session-log-frame .empty-note{padding:10px 0;color:var(--input-text-dim);}
+  .session-log-group{border-bottom:1px solid var(--line);padding:8px 0;}
+  .session-log-group-head{font-size:12px;font-weight:700;color:var(--gold);letter-spacing:.03em;margin-bottom:5px;display:flex;justify-content:space-between;gap:8px;}
+  .session-log-count{color:var(--input-text-dim);font-weight:600;white-space:nowrap;}
+  .session-log-item{display:flex;align-items:center;gap:7px;padding:3px 0 3px 10px;}
+  .session-log-badge{flex-shrink:0;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;color:#fff;letter-spacing:.03em;white-space:nowrap;}
+  .session-log-text{flex:1 1 auto;min-width:0;font-size:12.5px;line-height:1.35;overflow-wrap:anywhere;word-break:normal;color:var(--input-text);}
+  .session-log-delete{flex:0 0 auto;width:auto !important;min-width:30px;padding:2px 9px !important;font-size:12px !important;min-height:auto !important;border-radius:6px;}
+  .score-setup-panel{
+    margin-bottom:14px;
+  }
+  .mgmt-item:last-child{border-bottom:none;}
+  .mgmt-item span{font-size:14px;}
+  .mgmt-item button{padding:6px 12px;font-size:12px;min-height:auto;}
+
+  /* Bỏ mũi tên tăng/giảm của input số — để TA gõ tự do */
+  input[type=number]::-webkit-outer-spin-button,
+  input[type=number]::-webkit-inner-spin-button{
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type=number]{
+    -moz-appearance: textfield;
+  }
+
+  @media (max-width:640px){
+    .wrap{padding:14px 10px 90px;}
+    header{flex-direction:column;align-items:flex-start;gap:4px;margin-bottom:18px;}
+    header .brand{font-size:22px;}
+    .tabs{gap:8px;margin-bottom:16px;}
+    .tab-btn{flex:1;padding:11px 10px;font-size:12.5px;min-height:42px;}
+    .card{padding:14px 12px 16px;border-radius:12px;margin-bottom:14px;}
+    .card h2{font-size:17px;line-height:1.25;}
+    .row{flex-direction:column;gap:10px;margin-bottom:10px;}
+    .field{min-width:100%;}
+    .field[style*="max-width"]{max-width:100% !important;}
+    .field[style*="flex:0 0 auto"]{align-self:stretch !important;}
+    select,input[type=text],input[type=date],input[type=number],input[type=month],textarea{font-size:16px;min-height:44px;}
+    button{width:100%;min-height:44px;}
+    .btn-sm{min-height:38px;}
+    .mgmt-item button{width:auto;min-height:32px;}
+    .action-row{flex-direction:column;align-items:stretch;}
+    .note-action{width:100%;justify-content:center;}
+    .chip-row{gap:7px;}
+    .chip{padding:9px 12px;font-size:12.5px;}
+    .inline-add{flex-direction:column;}
+    .inline-add button{width:100%;}
+    .followup-item{flex-direction:column;align-items:flex-start;gap:8px;}
+    .followup-item button{width:100%;}
+    .session-log-frame{padding:6px 8px;overflow:hidden;}
+    .session-log-group{padding:8px 0;}
+    .session-log-group-head{align-items:flex-start;font-size:12.5px;line-height:1.25;}
+    .session-log-count{font-size:12px;}
+    .session-log-item{display:grid;grid-template-columns:auto minmax(0,1fr) 32px;gap:6px;padding:5px 0;align-items:center;}
+    .session-log-badge{font-size:8.5px;padding:1px 4px;}
+    .session-log-text{font-size:12px;line-height:1.32;overflow-wrap:anywhere;word-break:normal;white-space:normal;}
+    .session-log-delete{width:32px !important;min-width:32px;max-width:32px;padding:2px 0 !important;justify-self:end;}
+    .divider-label{margin:20px 0 8px;}
+    .toast{left:14px;right:14px;transform:none;text-align:center;bottom:16px;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand">G.EDU — TA Toolkit</div>
+    <div class="sub">Nhật ký lớp học</div>
+  </header>
+
+  <div id="screen-welcome">
+    <div class="card" style="text-align:center;padding:36px 22px;">
+      <h2 style="margin:0 0 6px;">Chọn việc cần làm</h2>
+      <p class="hint" style="margin:0 0 24px;">TA muốn làm gì hôm nay?</p>
+      <div style="display:flex;flex-direction:column;gap:14px;max-width:360px;margin:0 auto;">
+        <button class="btn-gold" style="padding:16px;font-size:16px;" onclick="showScreen('classSelect')">Nhập liệu</button>
+        <button class="btn-ghost" style="padding:16px;font-size:16px;" onclick="showScreen('manage')">⚙️ Quản lý lớp & học sinh</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="screen-classSelect" style="display:none;">
+
+  <button class="btn-ghost btn-sm" style="margin-bottom:14px;" onclick="showScreen('welcome')">← Quay lại</button>
+
+  <!-- BƯỚC 1: CHỌN LỚP / NGÀY -->
+  <div class="card" data-step="1">
+    <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;">
+      <h2 style="margin:0;"><span class="step-num">1</span>Chọn lớp & ngày</h2>
+      <button class="btn-ghost btn-sm" onclick="refreshData()">🔄 Làm mới danh sách</button>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Lớp</label>
+        <select id="classSelect"></select>
+      </div>
+      <div class="field">
+        <label>Ngày</label>
+        <input type="date" id="dateInput">
+      </div>
+    </div>
+    <div class="row" style="align-items:flex-end;">
+      <div class="field">
+        <label>Số test hôm nay (nếu có)</label>
+        <select id="classTestNameInput"></select>
+      </div>
+      <div class="field" style="flex:0 0 auto;min-width:auto;">
+        <button class="btn-sage" onclick="saveClassTestProgress()">Lưu test</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BƯỚC 2: GHI CHÚ CỦA TA (lọc theo lớp) -->
+  <div class="card followup-panel" id="followupCard" data-step="2">
+    <h2><span class="step-num">2</span>Ghi chú của TA</h2>
+    <div id="followupList"><p class="empty-note">Chọn lớp để xem ghi chú...</p></div>
+  </div>
+
+  <div class="card" style="text-align:center;">
+    <button class="btn-gold" style="padding:14px 28px;" onclick="showScreen('attendance')">Tiếp tục →</button>
+  </div>
+
+  </div>
+
+  <div id="screen-attendance" style="display:none;">
+
+  <button class="btn-ghost btn-sm" style="margin-bottom:14px;" onclick="showScreen('classSelect')">← Quay lại</button>
+
+  <!-- BƯỚC 3: ĐIỂM DANH -->
+  <div class="card" data-step="3">
+    <h2><span class="step-num">3</span>Điểm danh: đi học muộn / vắng</h2>
+
+    <div class="row">
+      <div class="field">
+        <label>Học sinh</label>
+        <select id="attendanceStudentSelect" onchange="toggleStudentAddBox('attendanceStudentSelect')"></select>
+        <div class="inline-add" id="attendanceStudentSelect_addBox" style="display:none;">
+          <input type="text" id="attendanceStudentSelect_newInput" placeholder="Tên học sinh mới">
+          <button class="btn-gold btn-sm" onclick="submitNewStudentFor('attendanceStudentSelect')">Thêm</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Loại</label>
+        <div class="chip-row">
+          <button type="button" class="chip" id="att_chip_absent_excused" onclick="selectAttendanceType('absent_excused')">Vắng (P)</button>
+          <button type="button" class="chip" id="att_chip_absent_unexcused" onclick="selectAttendanceType('absent_unexcused')">Vắng (KP)</button>
+          <button type="button" class="chip" id="att_chip_late" onclick="selectAttendanceType('late')">Muộn</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field">
+        <label>Ghi chú (không bắt buộc)</label>
+        <input type="text" id="attendanceNoteInput">
+      </div>
+    </div>
+    <button class="btn-rust" id="saveAttendanceBtn" onclick="saveAttendance()">Xác nhận điểm danh</button>
+  </div>
+
+  <div class="card" style="text-align:center;">
+    <p class="hint" style="margin:0 0 14px;">Lớp này không có ai vắng/muộn thì bấm tiếp tục, không bắt buộc điểm danh.</p>
+    <button class="btn-gold" style="padding:14px 28px;" onclick="showScreen('dataEntry')">Tiếp tục →</button>
+  </div>
+
+  </div>
+
+  <div id="screen-dataEntry" style="display:none;">
+
+  <button class="btn-ghost btn-sm" style="margin-bottom:14px;" onclick="showScreen('attendance')">← Quay lại</button>
+
+
+  <div class="entry-group">
+    <div class="entry-group-label">✏️ Nhập dữ liệu buổi học</div>
+
+  <!-- BƯỚC 4: CỘT ĐIỂM -->
+  <div class="card" data-step="4">
+    <h2><span class="step-num">4</span>Nhập điểm</h2>
+    <div class="row score-setup-panel">
+      <div class="field">
+        <label>Cột điểm</label>
+        <select id="testCatSelect" onchange="onTestCatChange()"></select>
+      </div>
+      <div class="field" id="customNameField" style="display:none;">
+        <label>Tên bài (tự nhập)</label>
+        <input type="text" id="testCustomNameInput">
+      </div>
+      <div class="field" id="unitField">
+        <label>Unit / tên bài *</label>
+        <input type="text" id="testUnitInput">
+      </div>
+      <div class="field" id="totalField">
+        <label>Điểm tổng của bài (không bắt buộc)</label>
+        <input type="number" id="testTotalInput">
+      </div>
+    </div>
+    <label class="checkbox-row" style="margin-bottom:14px;">
+      <input type="checkbox" id="scoreMultiModeCheck" onchange="toggleScoreMultiMode()"> Nhiều học sinh cùng 1 kết quả
+    </label>
+
+    <div class="score-setup-panel">
+      <div class="row" id="scoreSingleStudentRow" style="margin-bottom:0;">
+        <div class="field">
+          <label>✦ Học sinh</label>
+          <select id="testStudentSelect" onchange="toggleStudentAddBox('testStudentSelect')"></select>
+          <div class="inline-add" id="testStudentSelect_addBox" style="display:none;">
+            <input type="text" id="testStudentSelect_newInput" placeholder="Tên học sinh mới">
+            <button class="btn-gold btn-sm" onclick="submitNewStudentFor('testStudentSelect')">Thêm</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row" id="scoreMultiStudentRow" style="display:none;margin-bottom:0;">
+        <div class="field">
+          <label>✦ Chọn các học sinh cùng kết quả này</label>
+          <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <button type="button" class="btn-ghost btn-sm" onclick="toggleAllScoreMultiStudents(true)">Chọn tất cả</button>
+            <button type="button" class="btn-ghost btn-sm" onclick="toggleAllScoreMultiStudents(false)">Bỏ chọn tất cả</button>
+          </div>
+          <div id="scoreMultiStudentList" class="session-log-frame" style="max-height:240px;overflow-y:auto;"></div>
+        </div>
+      </div>
+
+      <div class="row" style="margin:14px 0 0;">
+        <div class="field" id="scoreField">
+          <label id="scoreFieldLabel">✦ Điểm</label>
+          <input type="text" id="testScoreInput">
+          <label style="margin-top:10px;display:block;">✦ Ghi chú nhanh</label>
+          <select id="scoreShortcutSelect" onchange="handleScoreShortcutChange()" style="margin-top:4px;"></select>
+          <div class="inline-add" id="addShortcutBox" style="display:none;margin-top:6px;">
+            <input type="text" id="newShortcutInput" placeholder="Nút tắt mới, vd: Chưa thuộc kỹ lý thuyết">
+            <button class="btn-gold btn-sm" onclick="submitNewShortcut()">Thêm</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>✦ Note (không bắt buộc)</label>
+          <input type="text" id="testNoteInput">
+        </div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <label class="checkbox-row note-action">
+        <input type="checkbox" id="testFollowUpCheck"> Note lại cho buổi tới
+      </label>
+      <button class="btn-gold" id="saveTestScoreBtn" onclick="saveTestScore()">Xác nhận điểm</button>
+    </div>
+  </div>
+
+  <!-- BƯỚC 5: LỖI VI PHẠM -->
+  <div class="card" data-step="5">
+    <h2><span class="step-num">5</span>Lỗi vi phạm khác</h2>
+
+    <div class="row" style="margin-bottom:4px;">
+      <div class="field">
+        <label>Loại lỗi</label>
+        <select id="errorCatSelect" onchange="handleErrorCatSelectChange()"></select>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="field" id="errorCustomField" style="display:none;">
+        <label>Tự nhập lỗi khác</label>
+        <input type="text" id="errorCustomInput">
+      </div>
+      <div class="field">
+        <label>Chi tiết cụ thể (không bắt buộc)</label>
+        <input type="text" id="errorDetailInput">
+      </div>
+    </div>
+
+    <label class="checkbox-row" style="margin-bottom:14px;">
+      <input type="checkbox" id="errorMultiModeCheck" onchange="toggleErrorMultiMode()"> Nhiều học sinh cùng mắc lỗi này
+    </label>
+
+    <div class="row" id="errorSingleStudentRow">
+      <div class="field">
+        <label>Học sinh</label>
+        <select id="errorStudentSelect" onchange="toggleStudentAddBox('errorStudentSelect')"></select>
+        <div class="inline-add" id="errorStudentSelect_addBox" style="display:none;">
+          <input type="text" id="errorStudentSelect_newInput" placeholder="Tên học sinh mới">
+          <button class="btn-gold btn-sm" onclick="submitNewStudentFor('errorStudentSelect')">Thêm</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" id="errorMultiStudentRow" style="display:none;">
+      <div class="field">
+        <label>Chọn các học sinh mắc lỗi này</label>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <button type="button" class="btn-ghost btn-sm" onclick="toggleAllErrorMultiStudents(true)">Chọn tất cả</button>
+          <button type="button" class="btn-ghost btn-sm" onclick="toggleAllErrorMultiStudents(false)">Bỏ chọn tất cả</button>
+        </div>
+        <div id="errorMultiStudentList" class="session-log-frame" style="max-height:240px;overflow-y:auto;"></div>
+      </div>
+    </div>
+
+    <div class="action-row">
+      <label class="checkbox-row note-action">
+        <input type="checkbox" id="errorFollowUpCheck"> Note lại cho buổi tới
+      </label>
+      <button class="btn-rust" id="saveErrorLogBtn" onclick="saveErrorLog()">Xác nhận lỗi vi phạm</button>
+    </div>
+  </div>
+
+  <!-- NHẮC NHỞ TỰ DO -->
+  <div class="card" data-step="6">
+    <h2><span class="step-num">6</span>Nhắc nhở khác cho buổi tới</h2>
+    <p class="hint">Note tự do bất cứ điều gì cần kiểm tra lại vào buổi sau, không nhất thiết gắn với 1 học sinh cụ thể. Đây là ghi chú riêng của TA — lưu ngay lập tức, không xuất hiện trong nội dung báo cáo gửi Classroom.</p>
+    <div class="row">
+      <div class="field">
+        <label>Áp dụng cho</label>
+        <select id="reminderScopeSelect" onchange="toggleReminderStudentField()">
+          <option value="student">1 học sinh cụ thể</option>
+          <option value="class">Cả lớp đang chọn</option>
+        </select>
+      </div>
+      <div class="field" id="reminderStudentField">
+        <label>Học sinh</label>
+        <select id="reminderStudentSelect" onchange="toggleStudentAddBox('reminderStudentSelect')"></select>
+        <div class="inline-add" id="reminderStudentSelect_addBox" style="display:none;">
+          <input type="text" id="reminderStudentSelect_newInput" placeholder="Tên học sinh mới">
+          <button class="btn-gold btn-sm" onclick="submitNewStudentFor('reminderStudentSelect')">Thêm</button>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label>Nội dung nhắc nhở</label>
+        <input type="text" id="reminderNoteInput">
+      </div>
+    </div>
+    <button class="btn-sage" id="saveReminderBtn" onclick="saveReminder()">Thêm nhắc nhở</button>
+  </div>
+
+  </div>
+
+  <!-- BƯỚC 5: HOÀN TẤT BÁO CÁO BUỔI HỌC -->
+  <div class="card" data-step="7">
+    <h2><span class="step-num">7</span>Hoàn tất báo cáo buổi học</h2>
+    <p class="hint">Toàn bộ dữ liệu TA nhập ở các mục trên chỉ mới ghi tạm trên trình duyệt. Bấm "Tạo báo cáo buổi học" bên dưới để lưu chính thức lên hệ thống.</p>
+
+    <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin:0 0 6px;">
+      <div class="divider-label" style="margin:0;flex:1;">Nhật ký vừa nhập hôm nay</div>
+      <button class="btn-ghost btn-sm" onclick="loadTodayEntries()">🔄 Tải dữ liệu report gần nhất</button>
+    </div>
+    <p class="footnote" style="margin:0 0 10px;">Nếu TA lỡ thoát hoặc tải lại trang, chọn “Tải dữ liệu report gần nhất” để tiếp tục chỉnh sửa/bổ sung, rồi bấm lại “Tạo báo cáo buổi học”.</p>
+    <div id="sessionLogList" class="session-log-frame"><p class="empty-note">Chưa nhập gì trong phiên này.</p></div>
+
+    <div class="divider-label" style="margin-bottom:10px;"></div>
+
+    <button class="btn-gold" id="generateReportBtn" onclick="generateDayReport()" style="font-size:15px;padding:14px 24px;">🚀 Tạo báo cáo buổi học</button>
+    <textarea id="dayReportOutput" style="margin-top:14px;" placeholder="Báo cáo sẽ hiện ở đây..."></textarea>
+    <div style="margin-top:10px;">
+      <button class="btn-ghost btn-sm" onclick="copyReport('dayReportOutput')">Copy để dán lên Classroom</button>
+    </div>
+    <p class="footnote" style="margin-top:12px;line-height:1.6;">
+      💡 Nếu cần chỉnh sửa lại thông tin, TA cứ xoá dòng sai ở khung nhật ký, nhập/sửa lại cho đúng, rồi bấm <b>“Tạo báo cáo buổi học”</b> để dựng lại report mới.<br>
+      Chỉ những gì gõ sửa trực tiếp trong <i>ô báo cáo</i> mới <b>KHÔNG</b> được lưu vào hệ thống tổng — phần đó chỉ đổi câu chữ để dán Classroom thôi.
+    </p>
+  </div>
+
+  </div>
+
+  <!-- MÀN QUẢN LÝ LỚP & HỌC SINH -->
+  <div id="screen-manage" style="display:none;">
+
+  <button class="btn-ghost btn-sm" style="margin-bottom:14px;" onclick="showScreen('welcome')">← Quay lại</button>
+
+    <div class="card">
+      <h2>Thêm lớp mới</h2>
+      <p class="hint">Lớp mới thêm ở đây sẽ xuất hiện trong dropdown "Lớp" của mục Nhập liệu hằng ngày.</p>
+      <div class="inline-add">
+        <input type="text" id="mgmtNewClassInput" placeholder="Tên lớp mới">
+        <button class="btn-gold btn-sm" onclick="mgmtAddClass()">Thêm lớp</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;">
+        <h2 style="margin:0;">Quản lý học sinh</h2>
+        <span id="classSizeBadge" class="footnote" style="font-size:13px;color:var(--gold);"></span>
+      </div>
+      <p class="hint">Chọn lớp để xem/thêm/xoá học sinh trong lớp đó.</p>
+      <div class="row">
+        <div class="field">
+          <label>Lớp</label>
+          <select id="mgmtClassSelect" onchange="renderMgmtStudentList()"></select>
+        </div>
+      </div>
+      <div class="inline-add" style="margin-bottom:14px;">
+        <input type="text" id="mgmtNewStudentInput" placeholder="Tên học sinh mới">
+        <button class="btn-gold btn-sm" onclick="mgmtAddStudent()">Thêm học sinh</button>
+      </div>
+      <div id="mgmtStudentList"></div>
+    </div>
+
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============== CONFIG ============== */
+const CONFIG = {
+  API_URL: 'https://script.google.com/macros/s/AKfycbxGm9wRedsgXlwf0NVM5KvRx2kIlvI0c4fQHD6wGMNZmRELshb4o_9uoFF3Ws_IpFmuwA/exec'
+};
+
+/* ============== STATE ============== */
+const SUBMISSION_LABELS = {
+  'Thu âm Padlet': ['Đã nộp', 'Chưa nộp'],
+  'viết Journal': ['Đã nộp', 'Chưa nộp'],
+  'Quên truyện': ['Có quên', 'Không quên']
+};
+function getSubmissionLabels(name){
+  return SUBMISSION_LABELS[name] || ['Có', 'Không'];
+}
+
+let STATE = {
+  classes: [],
+  students: [],
+  testCategories: [],
+  testOptions: [],
+  errorCategories: [],
+  scoreShortcuts: [],
+  pendingFollowUps: [],
+  reminders: [],
+  classProgress: [],
+  sessionLog: [],
+  pendingBatch: { testScores: [], errors: [], attendance: [] },   // ghi tạm, chưa gửi Sheet
+  submittedToday: { testScores: [], errors: [], attendance: [] }  // đã gửi Sheet trong phiên này
+};
+
+const SHEET_NAME_BY_TYPE = { testScores: 'TỔNG HỢP ĐIỂM CÁC LỚP', errors: 'TỔNG HỢP LỖI VI PHẠM', attendance: 'ĐIỂM DANH' };
+function genLocalId(){ return 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); }
+
+/* ============== HELPERS ============== */
+function toast(msg, isErr){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isErr ? ' err' : '');
+  setTimeout(()=> t.className = 'toast', 2200);
+}
+
+async function withLoadingButton(btnId, loadingText, fn){
+  const btn = document.getElementById(btnId);
+  const originalText = btn.textContent;
+  const originalDisabled = btn.disabled;
+  btn.disabled = true;
+  btn.textContent = loadingText;
+  try {
+    await fn();
+  } finally {
+    btn.disabled = originalDisabled;
+    btn.textContent = originalText;
+  }
+}
+
+async function apiGet(action, params={}){
+  const allParams = Object.assign({ action }, params);
+  const query = Object.keys(allParams)
+    .map(k => encodeURIComponent(k) + '=' + encodeURIComponent(allParams[k]))
+    .join('&');
+  const fullUrl = CONFIG.API_URL + (CONFIG.API_URL.indexOf('?') === -1 ? '?' : '&') + query;
+  try {
+    const res = await fetch(fullUrl);
+    const text = await res.text();
+    // Nếu Apps Script chưa được cấp quyền truy cập (chưa deploy đúng hoặc session hết hạn),
+    // Google sẽ trả về trang HTML đăng nhập thay vì JSON — phát hiện sớm để báo lỗi phân quyền rõ ràng.
+    const contentType = (res.headers.get('content-type') || '').toLowerCase();
+    const trimmed = text.trimStart();
+    const isHtml = contentType.includes('text/html') || trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<!doctype') || trimmed.startsWith('<html') || trimmed.startsWith('<HTML');
+    if (isHtml){
+      console.error('apiGet: Nhận được trang HTML (thường là trang đăng nhập Google). Kiểm tra quyền deploy.', text.slice(0, 300));
+      return { error: 'Lỗi phân quyền: Apps Script trả về trang đăng nhập Google. Kiểm tra Web app đã deploy với quyền truy cập phù hợp (Who has access: Anyone) và dùng đúng Web app URL.' };
+    }
+    try {
+      return JSON.parse(text);
+    } catch (parseErr){
+      console.error('apiGet: Apps Script không trả về JSON hợp lệ. Nội dung nhận được:', text.slice(0, 300));
+      return { error: 'Apps Script trả về dữ liệu không hợp lệ (có thể do hết hạn mức, cold-start, hoặc lỗi trong Code.gs)' };
+    }
+  } catch (err){
+    console.error('apiGet error:', err);
+    return { error: 'Không kết nối được tới Apps Script (kiểm tra API_URL / mạng)' };
+  }
+}
+
+async function apiPost(action, payload){
+  // Tự động khoá + hiện trạng thái loading trên nút vừa bấm (nếu có), để TA không bấm liên tục
+  // trong lúc chờ Apps Script phản hồi — không cần sửa riêng từng nút.
+  const activeBtn = (document.activeElement && document.activeElement.tagName === 'BUTTON') ? document.activeElement : null;
+  let originalText = null;
+  if (activeBtn && !activeBtn.disabled){
+    originalText = activeBtn.textContent;
+    activeBtn.disabled = true;
+    activeBtn.textContent = 'Đang xử lý...';
+  }
+
+  // Gửi qua GET (giống apiGet) thay vì fetch POST: Apps Script Web App hay bị CORS chặn khi
+  // fetch POST cross-origin bị redirect nội bộ tới script.googleusercontent.com. GET không bị
+  // vấn đề này. Payload được đóng gói thành JSON rồi encode vào query string.
+  const query = 'action=' + encodeURIComponent(action) + '&payload=' + encodeURIComponent(JSON.stringify(payload || {}));
+  const fullUrl = CONFIG.API_URL + (CONFIG.API_URL.indexOf('?') === -1 ? '?' : '&') + query;
+
+  try {
+    const res = await fetch(fullUrl);
+    const text = await res.text();
+    const contentType = (res.headers.get('content-type') || '').toLowerCase();
+    const trimmed = text.trimStart();
+    const isHtml = contentType.includes('text/html') || trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<!doctype') || trimmed.startsWith('<html') || trimmed.startsWith('<HTML');
+    if (isHtml){
+      console.error('apiPost: Nhận được trang HTML (thường là trang đăng nhập Google). Kiểm tra quyền deploy.', text.slice(0, 300));
+      return { success: false, error: 'Lỗi phân quyền: Apps Script trả về trang đăng nhập Google. Kiểm tra Web app đã deploy với quyền truy cập phù hợp (Who has access: Anyone) và dùng đúng Web app URL.' };
+    }
+    try {
+      return JSON.parse(text);
+    } catch (parseErr){
+      console.error('apiPost: Apps Script không trả về JSON hợp lệ. Nội dung nhận được:', text.slice(0, 300));
+      return { success: false, error: 'Apps Script trả về dữ liệu không hợp lệ (có thể do lỗi trong Code.gs)' };
+    }
+  } catch (err){
+    console.error('apiPost error:', err);
+    return { success: false, error: 'Không kết nối được tới Apps Script (kiểm tra API_URL / mạng)' };
+  } finally {
+    if (activeBtn && originalText !== null){
+      activeBtn.disabled = false;
+      activeBtn.textContent = originalText;
+    }
+  }
+}
+
+function todayStr(){
+  const d = new Date();
+  return d.toISOString().slice(0,10);
+}
+
+/* ============== INIT ============== */
+async function init(){
+  document.getElementById('dateInput').value = todayStr();
+
+  if (CONFIG.API_URL.includes('PASTE_YOUR')) {
+    toast('Chưa gắn API_URL — xem hướng dẫn trong file HTML', true);
+  }
+
+  await loadData();
+  loadPendingFromLocalStorage();
+  renderSessionLog();
+  renderFollowUps();
+}
+
+async function loadData(){
+  let data;
+  try {
+    data = await apiGet('init');
+  } catch(err){
+    console.error('loadData: lỗi khi gọi apiGet:', err);
+    toast('Không tải được dữ liệu: ' + (err && err.message ? err.message : 'lỗi kết nối Apps Script'), true);
+    return false;
+  }
+
+  if (!data || data.error){
+    console.error('loadData: apiGet trả về lỗi:', data && data.error);
+    toast('Không tải được dữ liệu: ' + (data && data.error ? data.error : 'phản hồi rỗng từ Apps Script'), true);
+    return false;
+  }
+
+  STATE.classes = data.classes || [];
+  STATE.students = data.students || [];
+  STATE.testCategories = data.testCategories || [];
+  STATE.testOptions = data.testOptions || [];
+  STATE.errorCategories = data.errorCategories || [];
+  STATE.scoreShortcuts = data.scoreShortcuts || [];
+  STATE.pendingFollowUps = data.pendingFollowUps || [];
+  STATE.reminders = data.pendingReminders || [];
+  STATE.classProgress = data.classProgress || [];
+
+  try {
+    renderAll();
+    if (document.getElementById('screen-manage').style.display !== 'none') renderManagementView();
+  } catch(err){
+    console.error('loadData: dữ liệu đã tải được nhưng lỗi khi render giao diện:', err);
+    toast('Đã tải được dữ liệu nhưng lỗi hiển thị: ' + (err && err.message ? err.message : err), true);
+    return false;
+  }
+  return true;
+}
+
+async function refreshData(){
+  toast('Đang tải lại danh sách từ Sheet...');
+  const ok = await loadData();
+  if (ok) toast('Đã cập nhật danh sách mới nhất');
+}
+
+function renderAll(){
+  renderClassSelect();
+  renderClassTestSelect();
+  renderAllStudentSelects();
+  renderTestCatSelect();
+  renderErrorCatSelect();
+  renderScoreShortcuts();
+  renderFollowUps();
+  if (typeof toggleAttendanceFields === 'function') toggleAttendanceFields();
+  toggleReminderStudentField();
+}
+
+const STUDENT_SELECT_IDS = ['testStudentSelect', 'errorStudentSelect', 'attendanceStudentSelect', 'reminderStudentSelect'];
+const tomSelectInstances = {};
+
+/* ============== DROPDOWNS ============== */
+function classOptionsHtml(){
+  return STATE.classes.map((c, i) => `<option value="${esc(c)}">${i + 1}. ${esc(c)}</option>`).join('');
+}
+
+function renderClassSelect(){
+  const sel = document.getElementById('classSelect');
+  const prev = tomSelectInstances.classSelect ? tomSelectInstances.classSelect.getValue() : sel.value;
+  // TomSelect.destroy() khôi phục lại option cũ đã cache, nên phải destroy trước khi thay innerHTML.
+  if (tomSelectInstances.classSelect){
+    tomSelectInstances.classSelect.destroy();
+    delete tomSelectInstances.classSelect;
+  }
+  sel.innerHTML = `<option value="">-- chọn lớp --</option>` + classOptionsHtml();
+  if (STATE.classes.includes(prev)) sel.value = prev;
+  sel.onchange = () => {
+    renderAllStudentSelects();
+    renderFollowUps();
+    if (document.getElementById('errorMultiModeCheck').checked) renderErrorMultiStudentList();
+    if (document.getElementById('scoreMultiModeCheck').checked) renderScoreMultiStudentList();
+  };
+  refreshTomSelect('classSelect');
+}
+
+function renderClassTestSelect(){
+  const sel = document.getElementById('classTestNameInput');
+  if (!sel) return;
+  const prev = tomSelectInstances.classTestNameInput ? tomSelectInstances.classTestNameInput.getValue() : sel.value;
+  if (tomSelectInstances.classTestNameInput){
+    tomSelectInstances.classTestNameInput.destroy();
+    delete tomSelectInstances.classTestNameInput;
+  }
+  sel.innerHTML = `<option value="">-- chọn test --</option>`
+    + STATE.testOptions.map((name, i) => `<option value="${esc(name)}">${i + 1}. ${esc(name)}</option>`).join('');
+  if (STATE.testOptions.includes(prev)) sel.value = prev;
+  refreshTomSelect('classTestNameInput');
+}
+
+async function saveClassTestProgress(){
+  const cls = document.getElementById('classSelect').value;
+  const date = document.getElementById('dateInput').value;
+  const testName = document.getElementById('classTestNameInput').value;
+
+  if (!cls || cls === '__new__'){ toast('Chọn lớp ở Bước 1 trước đã', true); return; }
+  if (!testName){ toast('Chọn tên test ở ô "Số test hôm nay" trước đã', true); return; }
+
+  const res = await apiPost('updateClassTestProgress', { className: cls, testName, date });
+  if (!res || !res.success){
+    toast('Lỗi: ' + (res && res.error ? res.error : 'Không lưu được tiến độ test'), true);
+    return;
+  }
+
+  STATE.classProgress = STATE.classProgress.filter(p => p.className !== cls);
+  STATE.classProgress.push({ className: cls, testName, date: formatVN(date) });
+
+  if (res.reminder){
+    STATE.reminders = STATE.reminders.filter(r => r.id !== res.reminder.id);
+    STATE.reminders.unshift(res.reminder);
+    renderFollowUps();
+  }
+
+  toast('Đã ghi nhận');
+}
+
+function refreshTomSelect(selectId){
+  if (typeof TomSelect === 'undefined') return; // thư viện chưa tải kịp — bỏ qua, select thường vẫn dùng được
+  const el = document.getElementById(selectId);
+  if (!el) return;
+  // Luôn destroy instance cũ trước khi tạo lại để TomSelect đọc đúng option hiện tại của <select>.
+  if (tomSelectInstances[selectId]){
+    tomSelectInstances[selectId].destroy();
+    delete tomSelectInstances[selectId];
+  }
+  tomSelectInstances[selectId] = new TomSelect(el, {
+    create: false,
+    maxOptions: null,
+    closeAfterSelect: true,
+    placeholder: 'Gõ để tìm...',
+    dropdownParent: 'body',
+    onItemAdd: function(){
+      this.close();
+      this.blur();
+    }
+  });
+}
+
+function renderAllStudentSelects(){
+  const cls = document.getElementById('classSelect').value;
+  const list = STATE.students.filter(s => s.className === cls);
+  STUDENT_SELECT_IDS.forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    const prev = tomSelectInstances[id] ? tomSelectInstances[id].getValue() : sel.value;
+    // Destroy trước khi thay innerHTML; nếu destroy sau innerHTML, TomSelect có thể restore option cũ và làm dropdown trắng.
+    if (tomSelectInstances[id]){
+      tomSelectInstances[id].destroy();
+      delete tomSelectInstances[id];
+    }
+    const options = list.map((s, i) => `<option value="${esc(s.name)}">${i + 1}. ${esc(s.name)}</option>`).join('');
+    sel.innerHTML = list.length ? options : `<option value="">-- chưa có học sinh --</option>`;
+    if (list.some(s => s.name === prev)) sel.value = prev;
+    toggleStudentAddBox(id);
+    // Tạo lại sau khi innerHTML đã có dữ liệu mới để TomSelect đồng bộ option mới nhất.
+    refreshTomSelect(id);
+  });
+}
+
+function toggleStudentAddBox(selectId){
+  const isNew = document.getElementById(selectId).value === '__new__';
+  document.getElementById(selectId + '_addBox').style.display = isNew ? 'flex' : 'none';
+}
+
+function setSelectValue(selectId, val){
+  const el = document.getElementById(selectId);
+  if (el) el.value = val;
+  if (tomSelectInstances[selectId]) tomSelectInstances[selectId].setValue(val, true);
+}
+
+async function submitNewStudentFor(selectId){
+  const cls = document.getElementById('classSelect').value;
+  if (!cls || cls === '__new__') { toast('Chọn lớp ở Bước 1 trước đã', true); return; }
+  const inputEl = document.getElementById(selectId + '_newInput');
+  const val = inputEl.value.trim();
+  if (!val) { toast('Nhập tên học sinh', true); return; }
+
+  await apiPost('addStudent', { studentName: val, className: cls });
+  STATE.students.push({ name: val, className: cls });
+  inputEl.value = '';
+  renderAllStudentSelects();
+  setSelectValue(selectId, val);
+  document.getElementById(selectId + '_addBox').style.display = 'none';
+  toast('Đã thêm học sinh ' + val);
+}
+
+function renderTestCatSelect(){
+  const sel = document.getElementById('testCatSelect');
+  const prev = sel.value;
+  const scoreCats = STATE.testCategories.filter(c => c.kind !== 'submission');
+  sel.innerHTML = scoreCats.map((c, i) => `<option value="${esc(c.name)}">${i + 1}. ${esc(c.name)}</option>`).join('')
+    + `<option value="__other__">Khác (tự nhập tên bài)</option>`;
+  const names = scoreCats.map(c => c.name);
+  if (names.includes(prev) || prev === '__other__') sel.value = prev;
+  toggleTestFields();
+}
+
+function currentTestCat(){
+  const sel = document.getElementById('testCatSelect');
+  const name = sel.value;
+  if (name === '__other__') return { name: null, kind: 'score', isOther: true };
+  const cat = STATE.testCategories.find(c => c.name === name);
+  return cat || null;
+}
+
+function toggleTestFields(){
+  const cat = currentTestCat();
+  const isOther = cat && cat.isOther;
+  document.getElementById('customNameField').style.display = isOther ? 'flex' : 'none';
+}
+
+function renderScoreShortcuts(){
+  const sel = document.getElementById('scoreShortcutSelect');
+  sel.innerHTML = `<option value="">-- chọn lý do nhanh --</option>`
+    + STATE.scoreShortcuts.map(text => `<option value="${esc(text)}">${esc(text)}</option>`).join('')
+    + `<option value="__add__">+ Thêm nút tắt</option>`;
+  refreshTomSelect('scoreShortcutSelect');
+}
+
+function handleScoreShortcutChange(){
+  const val = document.getElementById('scoreShortcutSelect').value;
+  if (val === '__add__'){
+    toggleAddShortcutBox();
+    setSelectValue('scoreShortcutSelect', '');
+    return;
+  }
+  // Không tự điền vào ô Note nữa — "Ghi chú nhanh" và "Note" là 2 mục độc lập,
+  // 2 giá trị sẽ được gộp lại (nếu cả 2 đều có) khi bấm "Xác nhận điểm".
+}
+
+function toggleAddShortcutBox(){
+  const box = document.getElementById('addShortcutBox');
+  box.style.display = box.style.display === 'none' ? 'flex' : 'none';
+}
+
+async function submitNewShortcut(){
+  const input = document.getElementById('newShortcutInput');
+  const val = input.value.trim();
+  if (!val) return;
+  await apiPost('addScoreShortcut', { text: val });
+  STATE.scoreShortcuts.push(val);
+  input.value = '';
+  document.getElementById('addShortcutBox').style.display = 'none';
+  renderScoreShortcuts();
+  toast('Đã lưu nút tắt "' + val + '" — dùng được ngay và cả những lần sau');
+}
+
+function onTestCatChange(){
+  document.getElementById('testUnitInput').value = '';
+  document.getElementById('testTotalInput').value = '';
+  document.getElementById('testScoreInput').value = '';
+  document.getElementById('testCustomNameInput').value = '';
+  toggleTestFields();
+}
+
+function renderErrorCatSelect(){
+  const sel = document.getElementById('errorCatSelect');
+  const prev = sel.value;
+  sel.innerHTML = `<option value="">-- chọn loại lỗi --</option>`
+    + STATE.errorCategories.map((c, i) => `<option value="${esc(c.name)}">${i + 1}. ${esc(c.name)}</option>`).join('')
+    + `<option value="__other__">+ Tự nhập lỗi khác</option>`;
+  const names = STATE.errorCategories.map(c => c.name);
+  if (names.includes(prev) || prev === '__other__') sel.value = prev;
+  else sel.value = '';
+  onErrorCatChange();
+  refreshTomSelect('errorCatSelect');
+}
+
+function handleErrorCatSelectChange(){
+  const val = document.getElementById('errorCatSelect').value;
+  if (val === '__other__'){ selectCustomError(); return; }
+  onErrorCatChange();
+}
+
+function selectCustomError(){
+  setSelectValue('errorCatSelect', '__other__');
+  onErrorCatChange();
+  const input = document.getElementById('errorCustomInput');
+  if (input) input.focus();
+}
+
+function errorCatRequiresDetail(name){
+  const cat = STATE.errorCategories.find(c => c.name === name);
+  return cat ? !!cat.requireDetail : false;
+}
+
+function onErrorCatChange(){
+  const val = document.getElementById('errorCatSelect').value;
+  document.getElementById('errorCustomField').style.display = val === '__other__' ? 'flex' : 'none';
+
+  const isRequired = errorCatRequiresDetail(val);
+  const detailLabel = document.querySelector('label[for="errorDetailInput"]') || document.getElementById('errorDetailInput').previousElementSibling;
+  if (detailLabel){
+    detailLabel.textContent = isRequired ? 'Chi tiết cụ thể (bắt buộc — bài nào/Unit nào)' : 'Chi tiết cụ thể (không bắt buộc)';
+  }
+}
+
+function toggleErrorMultiMode(){
+  const isMulti = document.getElementById('errorMultiModeCheck').checked;
+  document.getElementById('errorSingleStudentRow').style.display = isMulti ? 'none' : 'flex';
+  document.getElementById('errorMultiStudentRow').style.display = isMulti ? 'flex' : 'none';
+  if (isMulti) renderErrorMultiStudentList();
+  else refreshTomSelect('errorStudentSelect'); // TomSelect cần tính lại layout sau khi được hiện lại
+}
+
+function renderErrorMultiStudentList(){
+  const cls = document.getElementById('classSelect').value;
+  const list = STATE.students.filter(s => s.className === cls);
+  const box = document.getElementById('errorMultiStudentList');
+  if (!cls || cls === '__new__'){ box.innerHTML = `<p class="empty-note">Chọn lớp ở Bước 1 trước đã.</p>`; return; }
+  if (!list.length){ box.innerHTML = `<p class="empty-note">Lớp này chưa có học sinh.</p>`; return; }
+  box.innerHTML = list.map((s, i) => `
+    <label class="checkbox-row" style="padding:6px 0;">
+      <input type="checkbox" class="error-multi-student-cb" value="${escAttr(s.name)}"> ${i + 1}. ${esc(s.name)}
+    </label>`).join('');
+}
+
+function toggleAllErrorMultiStudents(checked){
+  document.querySelectorAll('.error-multi-student-cb').forEach(cb => cb.checked = checked);
+}
+
+function toggleScoreMultiMode(){
+  const isMulti = document.getElementById('scoreMultiModeCheck').checked;
+  document.getElementById('scoreSingleStudentRow').style.display = isMulti ? 'none' : 'flex';
+  document.getElementById('scoreMultiStudentRow').style.display = isMulti ? 'flex' : 'none';
+  const label = document.getElementById('scoreFieldLabel');
+  if (label) label.textContent = isMulti ? '✦ Điểm (chung cho cả nhóm)' : '✦ Điểm';
+  if (isMulti) renderScoreMultiStudentList();
+  else refreshTomSelect('testStudentSelect'); // TomSelect cần tính lại layout sau khi được hiện lại
+}
+
+function renderScoreMultiStudentList(){
+  const cls = document.getElementById('classSelect').value;
+  const list = STATE.students.filter(s => s.className === cls);
+  const box = document.getElementById('scoreMultiStudentList');
+  if (!cls || cls === '__new__'){ box.innerHTML = `<p class="empty-note">Chọn lớp ở Bước 1 trước đã.</p>`; return; }
+  if (!list.length){ box.innerHTML = `<p class="empty-note">Lớp này chưa có học sinh.</p>`; return; }
+  box.innerHTML = list.map((s, i) => `
+    <label class="checkbox-row" style="padding:6px 0;">
+      <input type="checkbox" class="score-multi-student-cb" value="${escAttr(s.name)}"> ${i + 1}. ${esc(s.name)}
+    </label>`).join('');
+}
+
+function toggleAllScoreMultiStudents(checked){
+  document.querySelectorAll('.score-multi-student-cb').forEach(cb => cb.checked = checked);
+}
+
+/* ============== CẦN THEO DÕI (lọc theo lớp) ============== */
+function renderFollowUps(){
+  const box = document.getElementById('followupList');
+  const cls = document.getElementById('classSelect').value;
+
+  if (!cls || cls === '__new__'){
+    box.innerHTML = `<p class="empty-note">Chọn lớp để xem ghi chú...</p>`;
+    return;
+  }
+
+  const errorItems = STATE.pendingFollowUps
+    .filter(f => f.className === cls)
+    .map(f => ({ id: f.id, kind: 'error', date: f.date, studentName: f.studentName, label: f.errorType, meta: f.evidence }));
+  const reminderItems = STATE.reminders
+    .filter(r => r.className === cls)
+    .map(r => ({ id: r.id, kind: 'reminder', date: r.date, studentName: r.studentName || null, label: r.note, meta: '', reminderType: r.reminderType || 'manual' }));
+  const all = [...reminderItems, ...errorItems];
+
+  if (!all.length){
+    box.innerHTML = `<p class="empty-note">Không có gì cần theo dõi cho lớp này 🎉</p>`;
+    return;
+  }
+
+  box.innerHTML = all.map(item => {
+    const who = item.studentName ? esc(item.studentName) : 'Cả lớp';
+    const isPending = String(item.id).startsWith('local_');
+    const pendingTag = isPending ? ` <i style="color:var(--gold-dim);font-weight:400;">(chưa lưu)</i>` : '';
+    const tag = item.kind === 'error' ? `<b>${esc(item.label)}</b>` : esc(item.label);
+    const doneLabel = item.reminderType === 'testProgress' ? 'Đã hoàn thành' : 'Đã kiểm tra';
+    return `
+    <div class="followup-item">
+      <div>
+        <div class="who">${who}${pendingTag}</div>
+        <div class="meta">${tag}${item.kind==='error' && item.meta ? ' · ' + esc(item.meta) : ''} · note ngày ${esc(item.date)}</div>
+      </div>
+      <button class="btn-ghost btn-sm" onclick="resolveItem('${escAttr(item.id)}','${item.kind}')">${doneLabel}</button>
+    </div>`;
+  }).join('');
+}
+
+async function resolveItem(id, kind){
+  const isLocalOnly = String(id).startsWith('local_');
+
+  if (kind === 'reminder'){
+    await apiPost('resolveReminder', { id });
+    STATE.reminders = STATE.reminders.filter(r => r.id !== id);
+  } else if (isLocalOnly){
+    // Follow-up này chưa thực sự lưu vào Sheet (mới ghi tạm) — chỉ cần bỏ khỏi danh sách local
+    STATE.pendingFollowUps = STATE.pendingFollowUps.filter(f => f.id !== id);
+  } else {
+    await apiPost('resolveFollowUp', { id });
+    STATE.pendingFollowUps = STATE.pendingFollowUps.filter(f => f.id !== id);
+  }
+  renderFollowUps();
+  toast('Đã đánh dấu kiểm tra xong');
+}
+
+/* ============== NHẬT KÝ VỪA NHẬP HÔM NAY (session log) ============== */
+// Thêm 1 mục Ở TRẠNG THÁI TẠM (chưa gửi Sheet) — dùng khi TA bấm "Lưu" ở các mục 3/4/Điểm danh.
+const PENDING_STORAGE_KEY = 'gedu_ta_pending_v1';
+
+function savePendingToLocalStorage(){
+  try {
+    const pendingLog = STATE.sessionLog.filter(e => e.status === 'pending');
+    const data = {
+      pendingBatch: STATE.pendingBatch,
+      pendingLog: pendingLog,
+      pendingFollowUps: STATE.pendingFollowUps.filter(f => String(f.id).startsWith('local_')),
+      cls: document.getElementById('classSelect') ? document.getElementById('classSelect').value : '',
+      date: document.getElementById('dateInput') ? document.getElementById('dateInput').value : ''
+    };
+    localStorage.setItem(PENDING_STORAGE_KEY, JSON.stringify(data));
+  } catch (err){ console.error('Không lưu được vào localStorage:', err); }
+}
+
+function loadPendingFromLocalStorage(){
+  try {
+    const raw = localStorage.getItem(PENDING_STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (!data) return;
+    const hasPending = data.pendingLog && data.pendingLog.length;
+    if (!hasPending) return;
+
+    STATE.pendingBatch = data.pendingBatch || STATE.pendingBatch;
+    STATE.sessionLog = (data.pendingLog || []).concat(STATE.sessionLog);
+    STATE.pendingFollowUps = (data.pendingFollowUps || []).concat(STATE.pendingFollowUps);
+
+    if (data.cls){
+      setSelectValue('classSelect', data.cls);
+      renderAllStudentSelects();
+    }
+    if (data.date) document.getElementById('dateInput').value = data.date;
+
+    toast(`Đã khôi phục ${data.pendingLog.length} mục chưa lưu từ phiên trước (do đóng tab/tải lại trang)`);
+  } catch (err){ console.error('Không đọc được localStorage:', err); }
+}
+
+function clearPendingLocalStorage(){
+  try { localStorage.removeItem(PENDING_STORAGE_KEY); } catch (err){}
+}
+
+function queuePending(type, payload, label, category){
+  const localId = genLocalId();
+  STATE.pendingBatch[type].push({ localId, payload });
+  STATE.sessionLog.unshift({
+    localId, status: 'pending', type, label,
+    className: payload.className || '', date: payload.date || '', studentName: payload.studentName || '',
+    reportExempt: !!payload.reportExempt,
+    category: category || ''
+  });
+  renderSessionLog();
+  savePendingToLocalStorage();
+  return localId;
+}
+
+function sessionLabelParts(label){
+  label = String(label || '');
+  const sep = label.includes(' — ') ? ' — ' : (label.includes(' - ') ? ' - ' : null);
+  if (!sep) return { student: '', rest: label };
+  const idx = label.indexOf(sep);
+  return { student: label.slice(0, idx).trim(), rest: label.slice(idx + sep.length).trim() };
+}
+
+function sessionGroupTitle(entry){
+  if (entry.category) {
+    if (entry.type === 'errors') return 'Lỗi: ' + entry.category;
+    return entry.category;
+  }
+  const parts = sessionLabelParts(entry.label);
+  const rest = parts.rest;
+  if (entry.type === 'testScores') return rest.split(':')[0].trim() || 'Nhập điểm';
+  if (entry.type === 'errors') return 'Lỗi: ' + rest.replace(/^Lỗi:\s*/, '').replace(/\s+\(note buổi tới\)$/i, '').trim();
+  if (entry.type === 'attendance') return rest || 'Điểm danh';
+  return rest || 'Khác';
+}
+
+function sessionItemText(entry){
+  const parts = sessionLabelParts(entry.label);
+  const student = entry.studentName || parts.student || 'Học sinh';
+  const rest = parts.rest;
+  if (entry.type === 'testScores'){
+    const colonIdx = rest.indexOf(':');
+    const value = colonIdx === -1 ? '' : rest.slice(colonIdx + 1).trim();
+    return value ? `${student}: ${value}` : student;
+  }
+  if (entry.type === 'errors') return student;
+  if (entry.type === 'attendance') return student;
+  return entry.label;
+}
+
+let sessionLogExpandedGroups = new Set(); // nhóm nào đang mở rộng (mặc định thu gọn hết để đỡ rối)
+
+function renderSessionLog(){
+  const box = document.getElementById('sessionLogList');
+  const visibleEntries = STATE.sessionLog.filter(e => !e.reportExempt);
+  if (!visibleEntries.length){
+    box.innerHTML = `<p class="empty-note">Chưa nhập gì trong phiên này.</p>`;
+    return;
+  }
+
+  const groups = [];
+  const groupMap = new Map();
+  visibleEntries.forEach(entry => {
+    const title = sessionGroupTitle(entry);
+    if (!groupMap.has(title)){
+      const group = { title, items: [] };
+      groupMap.set(title, group);
+      groups.push(group);
+    }
+    groupMap.get(title).items.push(entry);
+  });
+
+  box.innerHTML = groups.map(group => {
+    const isOpen = sessionLogExpandedGroups.has(group.title);
+    return `
+    <div class="session-log-group">
+      <div class="session-log-group-head" style="cursor:pointer;" onclick="toggleSessionLogGroup('${escAttr(group.title)}')">
+        <span>${isOpen ? '▾' : '▸'} ${esc(group.title)}</span>
+        <span class="session-log-count">${group.items.length} mục</span>
+      </div>
+      ${isOpen ? group.items.map(entry => {
+        const isPending = entry.status === 'pending';
+        const badgeBg  = isPending ? 'var(--gold-dim)' : 'var(--sage)';
+        const badgeTxt = isPending ? '⏳' : '☁️';
+        const badgeLabel = isPending ? 'CHƯA LƯU' : 'ĐÃ LƯU';
+        return `
+        <div class="session-log-item">
+          <span class="session-log-badge" title="${badgeLabel}" style="background:${badgeBg};">${badgeTxt}</span>
+          <span class="session-log-text">${esc(sessionItemText(entry))}</span>
+          <button class="btn-ghost session-log-delete" onclick="deleteSessionEntry('${escAttr(entry.localId)}')">✕</button>
+        </div>`;
+      }).join('') : ''}
+    </div>
+  `; }).join('');
+}
+
+function toggleSessionLogGroup(title){
+  if (sessionLogExpandedGroups.has(title)) sessionLogExpandedGroups.delete(title);
+  else sessionLogExpandedGroups.add(title);
+  renderSessionLog();
+}
+
+async function deleteSessionEntry(localId){
+  const idx = STATE.sessionLog.findIndex(e => e.localId === localId);
+  if (idx === -1) return;
+  const entry = STATE.sessionLog[idx];
+
+  if (entry.status === 'pending'){
+    if (!confirm(`Xoá mục "${entry.label}"?`)) return;
+    STATE.pendingBatch[entry.type] = STATE.pendingBatch[entry.type].filter(x => x.localId !== localId);
+    STATE.sessionLog.splice(idx, 1);
+    STATE.pendingFollowUps = STATE.pendingFollowUps.filter(f => f.id !== localId);
+    savePendingToLocalStorage();
+    renderSessionLog();
+    renderFollowUps();
+    toast('Đã xoá mục chưa lưu');
+    return;
+  }
+
+  if (!confirm(`Xoá mục "${entry.label}"? Sẽ xoá khỏi Sheet luôn.`)) return;
+
+  await apiPost('removeLogEntry', {
+    sheetName: entry.sheetName,
+    id: entry.id,
+    className: entry.className,
+    studentName: entry.studentName,
+    pivotColumn: entry.pivotColumn,
+    entryText: entry.entryText
+  });
+
+  STATE.submittedToday[entry.type] = STATE.submittedToday[entry.type].filter(x => x.id !== entry.id);
+  STATE.sessionLog.splice(idx, 1);
+  STATE.pendingFollowUps = STATE.pendingFollowUps.filter(f => f.id !== entry.id);
+  renderSessionLog();
+  renderFollowUps();
+  toast('Đã xoá — TA nhập lại cho đúng nhé');
+}
+
+/* ============== ACTIONS: thêm mới ============== */
+async function mgmtAddClass(){
+  const input = document.getElementById('mgmtNewClassInput');
+  const val = input.value.trim();
+  if (!val) return;
+  await apiPost('addClass', { className: val });
+  STATE.classes.push(val);
+  input.value = '';
+  renderClassSelect();
+  renderAllStudentSelects();
+  renderFollowUps();
+  renderMgmtClassSelect();
+  toast('Đã thêm lớp ' + val);
+}
+
+
+/* ============== ACTIONS: lưu dữ liệu ============== */
+function currentClass(){
+  const cls = document.getElementById('classSelect').value;
+  return (!cls || cls === '__new__') ? null : cls;
+}
+
+function selectedStudentFrom(selectId){
+  const cls = currentClass();
+  const stu = document.getElementById(selectId).value;
+  if (!cls || !stu || stu === '__new__') return null;
+  return { cls, stu };
+}
+
+function requireStudent(selectId){
+  const cls = currentClass();
+  if (!cls) { toast('Chọn lớp ở Bước 1 trước đã', true); return null; }
+  const sel = selectedStudentFrom(selectId);
+  if (!sel) { toast('Chọn học sinh ở mục này trước đã (lớp chưa có ai thì thêm học sinh trước)', true); return null; }
+  return sel;
+}
+
+function saveTestScore(){
+  const isMulti = document.getElementById('scoreMultiModeCheck').checked;
+  const cls = currentClass();
+  if (!cls) { toast('Chọn lớp ở Bước 1 trước đã', true); return; }
+
+  const cat = currentTestCat();
+  if (!cat) { toast('Chọn cột điểm trước đã', true); return; }
+
+  const date = document.getElementById('dateInput').value;
+  const quickReasonVal = document.getElementById('scoreShortcutSelect').value;
+  const quickReason = (quickReasonVal && quickReasonVal !== '__add__') ? quickReasonVal : '';
+  const noteTyped = document.getElementById('testNoteInput').value.trim();
+  const note = [quickReason, noteTyped].filter(Boolean).join(' - ');
+
+  let testTypeName = cat.name;
+  if (cat.isOther){
+    testTypeName = document.getElementById('testCustomNameInput').value.trim();
+    if (!testTypeName) { toast('Nhập tên bài ở ô "Tên bài (tự nhập)"', true); return; }
+  }
+
+  const total = document.getElementById('testTotalInput').value;
+  const score = document.getElementById('testScoreInput').value;
+  const unit = document.getElementById('testUnitInput').value.trim();
+  if (unit === '') { toast('Nhập Unit / tên bài', true); return; }
+  if (score === '' && !note.trim()) { toast('Nhập điểm hoặc chọn lý do (Quên sách/Chưa làm bài)', true); return; }
+
+  const scorePart = score !== '' ? score + (total ? '/' + total : '') : '';
+  const labelParts = [scorePart, note].filter(Boolean).join(' - ');
+  const needsFollowUp = document.getElementById('testFollowUpCheck').checked;
+
+  const logOneStudent = (studentName) => {
+    const payload = {
+      date, className: cls, studentName,
+      testType: testTypeName, kind: 'score',
+      unit, score, totalScore: total, note
+    };
+    queuePending('testScores', payload, `${studentName} — ${testTypeName} ${unit}: ${labelParts}`, testTypeName);
+
+    if (needsFollowUp){
+      const followUpText = `Điểm thấp: ${testTypeName} ${unit}${labelParts ? ' - ' + labelParts : ''}`;
+      const followUpPayload = {
+        date, className: cls, studentName, errorType: followUpText, evidence: '', needsFollowUp: true, reportExempt: true
+      };
+      const localId = queuePending('errors', followUpPayload, `${studentName} — ${followUpText} (note buổi tới)`);
+      STATE.pendingFollowUps.unshift({
+        id: localId, date: formatVN(date), className: cls, studentName, errorType: followUpText, evidence: ''
+      });
+    }
+  };
+
+  if (isMulti){
+    const checked = Array.from(document.querySelectorAll('.score-multi-student-cb:checked')).map(cb => cb.value);
+    if (!checked.length) { toast('Chọn ít nhất 1 học sinh', true); return; }
+
+    checked.forEach(logOneStudent);
+    document.querySelectorAll('.score-multi-student-cb').forEach(cb => cb.checked = false);
+    if (needsFollowUp) renderFollowUps();
+    savePendingToLocalStorage();
+
+    document.getElementById('testScoreInput').value = '';
+    document.getElementById('testNoteInput').value = '';
+    setSelectValue('scoreShortcutSelect', '');
+    document.getElementById('testFollowUpCheck').checked = false;
+    toast('Đã ghi nhận');
+    return;
+  }
+
+  const sel = requireStudent('testStudentSelect');
+  if (!sel) return;
+  logOneStudent(sel.stu);
+  if (needsFollowUp) renderFollowUps();
+  savePendingToLocalStorage();
+
+  setSelectValue('testStudentSelect', ''); // trả dropdown về rỗng để TA biết chọn tiếp tên khác
+  document.getElementById('testScoreInput').value = '';
+  // giữ nguyên Unit + Điểm tổng để nhập tiếp học sinh khác cùng bài
+  document.getElementById('testFollowUpCheck').checked = false;
+  document.getElementById('testNoteInput').value = '';
+  setSelectValue('scoreShortcutSelect', '');
+  toast('Đã ghi nhận');
+}
+
+function saveErrorLog(){
+  const isMulti = document.getElementById('errorMultiModeCheck').checked;
+  const cls = currentClass();
+  if (!cls) { toast('Chọn lớp ở Bước 1 trước đã', true); return; }
+
+  const catVal = document.getElementById('errorCatSelect').value;
+  if (!catVal) { toast('Chọn một nút lỗi nhanh ở trên hoặc bấm "+ Tự nhập lỗi khác"', true); return; }
+
+  let errorText;
+  if (catVal === '__other__'){
+    errorText = document.getElementById('errorCustomInput').value.trim();
+    if (!errorText) { toast('Nhập nội dung lỗi ở ô "Tự nhập lỗi khác"', true); return; }
+  } else {
+    errorText = catVal;
+  }
+  const detail = document.getElementById('errorDetailInput').value.trim();
+  if (errorCatRequiresDetail(catVal) && !detail) {
+    toast(`Nhập "Chi tiết cụ thể" (bài nào/Unit nào) cho lỗi "${catVal}"`, true);
+    return;
+  }
+  const errorCategory = errorText; // lưu lại tên lỗi gốc (chưa gắn chi tiết) để nhóm cho sạch
+  if (detail) errorText += ` - ${detail}`;
+
+  const needsFollowUp = document.getElementById('errorFollowUpCheck').checked;
+  const date = document.getElementById('dateInput').value;
+
+  const logOneStudent = (studentName) => {
+    const payload = { date, className: cls, studentName, errorType: errorText, evidence: '', needsFollowUp };
+    const localId = queuePending('errors', payload, `${studentName} — Lỗi: ${errorText}${needsFollowUp ? ' (note buổi tới)' : ''}`, errorCategory);
+    if (needsFollowUp){
+      STATE.pendingFollowUps.unshift({
+        id: localId, date: formatVN(date), className: cls, studentName, errorType: errorText, evidence: ''
+      });
+    }
+  };
+
+  if (isMulti){
+    const checked = Array.from(document.querySelectorAll('.error-multi-student-cb:checked')).map(cb => cb.value);
+    if (!checked.length) { toast('Chọn ít nhất 1 học sinh', true); return; }
+
+    checked.forEach(logOneStudent);
+    document.querySelectorAll('.error-multi-student-cb').forEach(cb => cb.checked = false);
+    if (needsFollowUp) renderFollowUps();
+    savePendingToLocalStorage();
+
+    document.getElementById('errorDetailInput').value = '';
+    document.getElementById('errorFollowUpCheck').checked = false;
+    toast('Đã ghi nhận');
+    return;
+  }
+
+  const sel = requireStudent('errorStudentSelect');
+  if (!sel) return;
+  logOneStudent(sel.stu);
+  if (needsFollowUp) renderFollowUps();
+  savePendingToLocalStorage();
+
+  setSelectValue('errorStudentSelect', ''); // trả dropdown học sinh về rỗng để TA biết chọn tiếp tên khác
+  document.getElementById('errorDetailInput').value = '';
+  document.getElementById('errorFollowUpCheck').checked = false;
+  toast('Đã ghi nhận');
+}
+
+let selectedAttendanceType = null; // 'absent_excused' | 'absent_unexcused' | 'late'
+
+function selectAttendanceType(type){
+  selectedAttendanceType = type;
+  ['att_chip_absent_excused', 'att_chip_absent_unexcused', 'att_chip_late'].forEach(id => {
+    document.getElementById(id).classList.remove('chip-active');
+  });
+  const idMap = { absent_excused: 'att_chip_absent_excused', absent_unexcused: 'att_chip_absent_unexcused', late: 'att_chip_late' };
+  document.getElementById(idMap[type]).classList.add('chip-active');
+}
+
+function saveAttendance(){
+  const sel = requireStudent('attendanceStudentSelect');
+  if (!sel) return;
+  if (!selectedAttendanceType) { toast('Chọn Vắng (P) / Vắng (KP) / Muộn trước đã', true); return; }
+
+  const note = document.getElementById('attendanceNoteInput').value;
+  const date = document.getElementById('dateInput').value;
+
+  let type, detail, label;
+  if (selectedAttendanceType === 'late'){
+    type = 'late'; detail = ''; label = 'Đi học muộn';
+  } else {
+    type = 'absent';
+    detail = selectedAttendanceType === 'absent_excused' ? 'excused' : 'unexcused';
+    label = selectedAttendanceType === 'absent_excused' ? 'Vắng (có phép)' : 'Vắng (không phép)';
+  }
+
+  const payload = { date, className: sel.cls, studentName: sel.stu, type, detail, note };
+  queuePending('attendance', payload, `${sel.stu} — ${label}`, label);
+
+  document.getElementById('attendanceNoteInput').value = '';
+  selectedAttendanceType = null;
+  ['att_chip_absent_excused', 'att_chip_absent_unexcused', 'att_chip_late'].forEach(id => {
+    document.getElementById(id).classList.remove('chip-active');
+  });
+  savePendingToLocalStorage();
+  toast('Đã ghi nhận');
+}
+
+function toggleReminderStudentField(){
+  const scope = document.getElementById('reminderScopeSelect').value;
+  document.getElementById('reminderStudentField').style.display = scope === 'student' ? 'flex' : 'none';
+}
+
+async function saveReminder(){
+  await withLoadingButton('saveReminderBtn', 'Đang lưu...', saveReminderImpl);
+}
+
+async function saveReminderImpl(){
+  const cls = document.getElementById('classSelect').value;
+  const stu = document.getElementById('reminderStudentSelect').value;
+  const scope = document.getElementById('reminderScopeSelect').value;
+  const note = document.getElementById('reminderNoteInput').value.trim();
+
+  if (!cls || cls === '__new__') { toast('Chọn lớp trước đã', true); return; }
+  if (scope === 'student' && (!stu || stu === '__new__')) { toast('Chọn học sinh trước đã', true); return; }
+  if (!note) { toast('Nhập nội dung nhắc nhở', true); return; }
+
+  const studentName = scope === 'student' ? stu : '';
+  const date = document.getElementById('dateInput').value;
+
+  const res = await apiPost('addReminder', { date, className: cls, studentName, note });
+  if (res.success){
+    STATE.reminders.unshift({ id: res.id, date: formatVN(date), className: cls, studentName, note, reminderType: 'manual' });
+    renderFollowUps();
+    document.getElementById('reminderNoteInput').value = '';
+    toast('Đã thêm nhắc nhở');
+  } else {
+    toast(res.error || 'Có lỗi xảy ra', true);
+  }
+}
+
+/* ============== BÁO CÁO BUỔI HỌC (theo ngày) ============== */
+async function loadTodayEntries(){
+  const cls = document.getElementById('classSelect').value;
+  const date = document.getElementById('dateInput').value;
+  if (!cls || cls === '__new__' || !date) { toast('Chọn lớp và ngày ở Bước 1', true); return; }
+
+  toast('Đang tải dữ liệu report gần nhất...');
+  const data = await apiGet('reportDay', { className: cls, date });
+  if (!data || data.error){ toast('Không tải được: ' + (data && data.error ? data.error : 'thử lại nhé'), true); return; }
+
+  ['testScores', 'errors', 'attendance'].forEach(type => {
+    STATE.submittedToday[type] = STATE.submittedToday[type].filter(x => !(x.className === cls && x.date === date));
+  });
+  STATE.sessionLog = STATE.sessionLog.filter(e => !(e.status === 'submitted' && e.className === cls && e.date === date));
+
+  let addedCount = 0;
+  const mapIn = (type, items, labelFn) => {
+    items.forEach(r => {
+      if (!r.id) return;
+      const submittedItem = Object.assign({ className: cls, date, studentName: r.studentName }, r);
+      STATE.submittedToday[type].push(submittedItem);
+      STATE.sessionLog.push({
+        localId: genLocalId(), status: 'submitted', type,
+        id: r.id, date, entryText: r.entryText, pivotColumn: r.pivotColumn,
+        className: cls, studentName: r.studentName, sheetName: SHEET_NAME_BY_TYPE[type],
+        label: labelFn(submittedItem)
+      });
+      addedCount++;
+    });
+  };
+
+  mapIn('testScores', data.tests || [], labelForReportItem);
+  mapIn('errors', data.errors || [], labelForReportItem);
+  mapIn('attendance', data.attendance || [], labelForReportItem);
+
+  renderSessionLog();
+  toast(addedCount ? `Đã tải ${addedCount} mục từ report gần nhất` : 'Report gần nhất chưa có dữ liệu');
+}
+
+function labelForReportItem(item){
+  if (item.type === 'testScores' || item.testType){
+    const value = item.kind === 'submission'
+      ? ((item.submitted === true || item.submitted === 'TRUE') ? 'Có' : 'Không')
+      : [item.score + (item.totalScore ? '/' + item.totalScore : ''), item.note].filter(Boolean).join(' - ');
+    return `${item.studentName} - ${item.testType}${item.unit ? ' ' + item.unit : ''}${value ? ': ' + value : ''}`;
+  }
+  if (item.type === 'errors' || item.errorType){
+    return `${item.studentName} - Lỗi: ${item.errorType}`;
+  }
+  return `${item.studentName} - ${item.type === 'absent' ? 'Vắng' : 'Đi học muộn'}`;
+}
+
+function currentSnapshotItems(cls, date){
+  const snapshot = { testScores: [], errors: [], attendance: [] };
+  ['testScores', 'errors', 'attendance'].forEach(type => {
+    STATE.submittedToday[type]
+      .filter(item => item.className === cls && item.date === date)
+      .forEach(item => snapshot[type].push(Object.assign({}, item)));
+    STATE.pendingBatch[type]
+      .filter(item => item.payload.className === cls && item.payload.date === date)
+      .forEach(item => snapshot[type].push(Object.assign({}, item.payload)));
+  });
+  return snapshot;
+}
+
+function lowerFirstChar(text){
+  text = String(text || '');
+  return text ? text.charAt(0).toLowerCase() + text.slice(1) : text;
+}
+
+function buildReportLines(cls, date){
+  const lines = [];
+  const tests = STATE.submittedToday.testScores.filter(t => t.className === cls && (!date || t.date === date));
+  const errors = STATE.submittedToday.errors.filter(e => e.className === cls && (!date || e.date === date));
+  const attendance = STATE.submittedToday.attendance.filter(a => a.className === cls && (!date || a.date === date));
+
+  // Nhóm điểm số theo (loại bài + unit + tổng điểm)
+  const scoreRows = tests.filter(t => t.kind !== 'submission');
+  const scoreGroups = new Map();
+  scoreRows.forEach(t => {
+    const key = t.testType + '|' + t.unit + '|' + t.totalScore;
+    if (!scoreGroups.has(key)) scoreGroups.set(key, { testType: t.testType, unit: t.unit, totalScore: t.totalScore, items: [] });
+    scoreGroups.get(key).items.push(t);
+  });
+  scoreGroups.forEach(g => {
+    const studentsStr = g.items.map(t => `${t.studentName} ${lowerFirstChar(t.score || t.note || 'không có điểm')}`).join('; ');
+    lines.push(`${g.testType}${g.unit ? ' - ' + g.unit : ''}${g.totalScore ? ' (' + g.totalScore + ')' : ''}: ${studentsStr}`);
+  });
+
+  // Nhóm nộp bài / kiểm tra theo loại cột
+  const submitRows = tests.filter(t => t.kind === 'submission');
+  const submitGroups = new Map();
+  submitRows.forEach(t => {
+    if (!submitGroups.has(t.testType)) submitGroups.set(t.testType, []);
+    submitGroups.get(t.testType).push(t);
+  });
+  submitGroups.forEach((items, testType) => {
+    const [yes, no] = getSubmissionLabels(testType);
+    const studentsStr = items.map(t => `${t.studentName} ${lowerFirstChar(t.submitted ? yes : no)}`).join('; ');
+    lines.push(`${testType}: ${studentsStr}`);
+  });
+
+  // Lỗi vi phạm — nhóm theo từng loại lỗi để báo cáo ngắn hơn
+  // (bỏ qua các mục note-riêng không phải lỗi thật, vd note theo dõi điểm thấp)
+  const realErrors = errors.filter(e => !e.reportExempt);
+  if (realErrors.length){
+    const errorGroups = new Map();
+    realErrors.forEach(e => {
+      const key = e.errorType || 'Lỗi vi phạm';
+      if (!errorGroups.has(key)) errorGroups.set(key, []);
+      errorGroups.get(key).push(e.studentName);
+    });
+    errorGroups.forEach((studentNames, errorType) => {
+      lines.push(`${errorType}: ${studentNames.join(', ')}`);
+    });
+  }
+
+  // Điểm danh — tách riêng đi muộn / vắng
+  const lateRows = attendance.filter(a => a.type !== 'absent');
+  if (lateRows.length){
+    const studentsStr = lateRows.map(a => `${a.studentName}${a.detail ? ' (' + a.detail + ')' : ''}`).join(', ');
+    lines.push(`Đi học muộn: ${studentsStr}`);
+  }
+  const absentRows = attendance.filter(a => a.type === 'absent');
+  if (absentRows.length){
+    const studentsStr = absentRows.map(a => `${a.studentName} (${a.detail === 'excused' ? 'P' : 'KP'})`).join(', ');
+    lines.push(`Vắng: ${studentsStr}`);
+  }
+
+  return lines;
+}
+
+async function generateDayReport(){
+  const cls = document.getElementById('classSelect').value;
+  const date = document.getElementById('dateInput').value;
+  if (!cls || cls === '__new__' || !date) { toast('Chọn lớp và ngày ở Bước 1', true); return; }
+
+  await withLoadingButton('generateReportBtn', 'Đang lưu & tạo báo cáo...', async () => {
+    const snapshot = currentSnapshotItems(cls, date);
+    const res = await apiPost('saveDaySnapshot', Object.assign({ className: cls, date }, snapshot));
+
+    if (!res || !res.success){
+      const detail = res && res.error ? res.error : 'Không nhận được phản hồi hợp lệ từ Apps Script';
+      toast('Lỗi: ' + detail + ' — kiểm tra đã deploy Code.gs mới nhất chưa', true);
+      return;
+    }
+
+    const pendingLocalIds = new Set();
+    ['testScores', 'errors', 'attendance'].forEach(type => {
+      STATE.pendingBatch[type]
+        .filter(item => item.payload.className === cls && item.payload.date === date)
+        .forEach(item => pendingLocalIds.add(item.localId));
+
+      STATE.pendingBatch[type] = STATE.pendingBatch[type].filter(item => !(item.payload.className === cls && item.payload.date === date));
+      STATE.submittedToday[type] = STATE.submittedToday[type].filter(item => !(item.className === cls && item.date === date));
+    });
+
+    STATE.sessionLog = STATE.sessionLog.filter(e => {
+      if (pendingLocalIds.has(e.localId)) return false;
+      return !(e.status === 'submitted' && e.className === cls && e.date === date);
+    });
+
+    const newLogs = [];
+    ['testScores', 'errors', 'attendance'].forEach(type => {
+      const sentItems = snapshot[type];
+      const results = (res.results && res.results[type]) || [];
+      sentItems.forEach((item, i) => {
+        const r = results[i] || {};
+        const submittedItem = Object.assign({}, item, {
+          className: cls, date,
+          id: r.id, entryText: r.entryText, pivotColumn: r.pivotColumn
+        });
+        STATE.submittedToday[type].push(submittedItem);
+        newLogs.push({
+          localId: genLocalId(), status: 'submitted', type,
+          id: r.id, date, entryText: r.entryText, pivotColumn: r.pivotColumn,
+          className: cls, studentName: item.studentName, sheetName: SHEET_NAME_BY_TYPE[type],
+          label: labelForReportItem(Object.assign({ type }, submittedItem))
+        });
+      });
+    });
+    STATE.sessionLog = newLogs.concat(STATE.sessionLog);
+
+    const vnDate = formatVN(date);
+    STATE.pendingFollowUps = STATE.pendingFollowUps.filter(f => !(f.className === cls && f.date === vnDate));
+    STATE.submittedToday.errors
+      .filter(item => item.className === cls && item.date === date && item.needsFollowUp)
+      .forEach(item => STATE.pendingFollowUps.unshift({
+        id: item.id, date: vnDate, className: cls, studentName: item.studentName,
+        errorType: item.errorType, evidence: item.evidence || ''
+      }));
+
+    clearPendingLocalStorage();
+    renderSessionLog();
+    renderFollowUps();
+
+    const [y, m, d] = date.split('-');
+    const lines = buildReportLines(cls, date);
+
+    let out = `TÌNH HÌNH HỌC TẬP NGÀY ${d}/${m}/${y} — LỚP ${cls}\n\n`;
+    if (!lines.length){
+      out += `(Không có ghi nhận nào cho buổi học này)\n`;
+    } else {
+      lines.forEach((line, i) => { out += `[${i + 1}] ${line}\n`; });
+    }
+
+    document.getElementById('dayReportOutput').value = out;
+    toast('Đã lưu snapshot report gần nhất');
+  });
+}
+
+function copyReport(elId){
+  const ta = document.getElementById(elId);
+  ta.select();
+  document.execCommand('copy');
+  toast('Đã copy — dán lên Classroom được rồi');
+}
+
+/* ============== UTILS ============== */
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function escAttr(s){ return String(s).replace(/'/g, "\\'"); }
+function formatVN(iso){
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+/* ============== ĐIỀU HƯỚNG MÀN HÌNH (welcome / classSelect / dataEntry / manage) ============== */
+function showScreen(name){
+  const ids = { welcome: 'screen-welcome', classSelect: 'screen-classSelect', attendance: 'screen-attendance', dataEntry: 'screen-dataEntry', manage: 'screen-manage' };
+  Object.keys(ids).forEach(key => {
+    const el = document.getElementById(ids[key]);
+    if (el) el.style.display = (key === name) ? 'block' : 'none';
+  });
+  if (name === 'manage') renderManagementView();
+}
+function renderManagementView(){
+  renderMgmtClassSelect();
+  renderMgmtStudentList();
+}
+
+function renderMgmtClassSelect(){
+  const sel = document.getElementById('mgmtClassSelect');
+  const prev = sel.value;
+  sel.innerHTML = classOptionsHtml();
+  if (STATE.classes.includes(prev)) sel.value = prev;
+}
+
+function renderMgmtStudentList(){
+  const box = document.getElementById('mgmtStudentList');
+  const cls = document.getElementById('mgmtClassSelect').value;
+  const list = STATE.students.filter(s => s.className === cls);
+
+  const badge = document.getElementById('classSizeBadge');
+  badge.textContent = cls ? `Sĩ số: ${list.length}` : '';
+
+  if (!list.length){ box.innerHTML = `<p class="empty-note">Lớp này chưa có học sinh.</p>`; return; }
+  box.innerHTML = list.map(s => `
+    <div class="mgmt-item">
+      <span>${esc(s.name)}</span>
+      <button class="btn-ghost btn-sm" onclick="mgmtDeleteStudent('${escAttr(s.name)}','${escAttr(s.className)}')">Xoá</button>
+    </div>`).join('');
+}
+
+async function mgmtAddStudent(){
+  const cls = document.getElementById('mgmtClassSelect').value;
+  const input = document.getElementById('mgmtNewStudentInput');
+  const val = input.value.trim();
+  if (!cls) { toast('Chưa có lớp nào — thêm lớp trước đã', true); return; }
+  if (!val) return;
+  await apiPost('addStudent', { studentName: val, className: cls });
+  STATE.students.push({ name: val, className: cls });
+  input.value = '';
+  renderAll();
+  renderManagementView();
+  toast('Đã thêm học sinh ' + val);
+}
+
+async function mgmtDeleteStudent(name, className){
+  if (!confirm(`Xoá học sinh "${name}"?`)) return;
+  await apiPost('deleteStudent', { studentName: name, className });
+  STATE.students = STATE.students.filter(s => !(s.name === name && s.className === className));
+  renderAll();
+  renderManagementView();
+  toast('Đã xoá học sinh ' + name);
+}
+
+/* ============== THU GỌN TỪNG BƯỚC (ACCORDION) ============== */
+// Chỉ mở 1 bước tại 1 thời điểm để đỡ rối mắt — bấm vào tiêu đề bước để mở/đóng.
+function initStepAccordion(){
+  const cards = document.querySelectorAll('.step-card');
+  cards.forEach(card => {
+    // Header = phần tử con đầu tiên có chứa .step-num (có thể chính là h2, hoặc div bọc ngoài h2 + nút khác)
+    let header = null;
+    for (const child of Array.from(card.children)){
+      if (child.querySelector && child.querySelector('.step-num')){
+        header = child;
+        break;
+      }
+    }
+    if (!header) return;
+    header.classList.add('step-header');
+    header.style.justifyContent = 'flex-start'; // tránh xung đột với justify-content:space-between có sẵn (VD header Bước 1 có thêm nút "Làm mới danh sách")
+    const titleEl = header.querySelector('.step-num') ? header.querySelector('.step-num').parentElement : null;
+    if (titleEl) titleEl.style.flex = '1 1 auto'; // để tiêu đề đẩy nút/mũi tên toggle về sát mép phải
+
+    const toggle = document.createElement('span');
+    toggle.className = 'step-header-toggle';
+    toggle.textContent = '▾';
+    header.appendChild(toggle);
+
+    // Gom mọi phần tử còn lại trong card (sau header) vào 1 khối để ẩn/hiện chung
+    const body = document.createElement('div');
+    body.className = 'step-body';
+    let sibling = header.nextElementSibling;
+    while (sibling){
+      const next = sibling.nextElementSibling;
+      body.appendChild(sibling);
+      sibling = next;
+    }
+    card.appendChild(body);
+
+    header.addEventListener('click', (e) => {
+      if (e.target.closest('button')) return; // không đóng/mở nhầm khi bấm nút bên trong header (VD "Làm mới danh sách")
+      toggleStepCard(card);
+    });
+  });
+
+  // Mặc định: chỉ mở Bước 1, các bước còn lại thu gọn sẵn
+  cards.forEach(card => {
+    if (card.dataset.step !== '1') card.classList.add('collapsed');
+  });
+}
+
+function toggleStepCard(card){
+  const wasCollapsed = card.classList.contains('collapsed');
+  document.querySelectorAll('.step-card').forEach(c => c.classList.add('collapsed'));
+  if (wasCollapsed) card.classList.remove('collapsed');
+}
+
+initStepAccordion();
+init();
+</script>
+</body>
+</html>
