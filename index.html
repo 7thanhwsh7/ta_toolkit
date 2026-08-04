@@ -345,7 +345,7 @@
     </div>
     <div class="row" style="align-items:flex-end;">
       <div class="field">
-        <label>Số test hôm nay (nếu có)</label>
+        <label>[TEST BUỔI HỌC NGỮ PHÁP] Số test hôm nay (nếu có)</label>
         <select id="classTestNameInput"></select>
       </div>
       <div class="field" style="flex:0 0 auto;min-width:auto;">
@@ -356,7 +356,7 @@
 
   <!-- BƯỚC 2: GHI CHÚ CỦA TA (lọc theo lớp) -->
   <div class="card followup-panel" id="followupCard" data-step="2">
-    <h2><span class="step-num">2</span>Ghi chú của TA</h2>
+    <h2><span class="step-num">2</span>Ghi chú của TA (Reminder)</h2>
     <div id="followupList"><p class="empty-note">Chọn lớp để xem ghi chú...</p></div>
   </div>
 
@@ -873,6 +873,7 @@ function renderClassSelect(){
   sel.onchange = () => {
     renderAllStudentSelects();
     renderFollowUps();
+    renderSessionLog();
     if (document.getElementById('errorMultiModeCheck').checked) renderErrorMultiStudentList();
     if (document.getElementById('scoreMultiModeCheck').checked) renderScoreMultiStudentList();
   };
@@ -1178,12 +1179,18 @@ function renderFollowUps(){
     const isPending = String(item.id).startsWith('local_');
     const pendingTag = isPending ? ` <i style="color:var(--gold-dim);font-weight:400;">(chưa lưu)</i>` : '';
     const tag = item.kind === 'error' ? `<b>${esc(item.label)}</b>` : esc(item.label);
-    const doneLabel = item.reminderType === 'testProgress' ? 'Đã hoàn thành' : 'Đã kiểm tra';
+    const doneLabel = item.reminderType === 'testProgress' ? 'Đã phát bài cho HS' : 'Đã kiểm tra';
+    const isTestProgress = item.reminderType === 'testProgress';
+    // Bài test: gộp tên bài + ngày làm bài thành 1 câu gọn, VD "Test 2 làm ngày 31/07/2026" —
+    // không lặp lại "note ngày ..." nữa vì đã có "làm ngày ..." rồi.
+    const metaText = isTestProgress
+      ? `${tag} làm ngày ${esc(item.date)}`
+      : `${tag}${item.kind==='error' && item.meta ? ' · ' + esc(item.meta) : ''} · note ngày ${esc(item.date)}`;
     return `
     <div class="followup-item">
       <div>
         <div class="who">${who}${pendingTag}</div>
-        <div class="meta">${tag}${item.kind==='error' && item.meta ? ' · ' + esc(item.meta) : ''} · note ngày ${esc(item.date)}</div>
+        <div class="meta">${metaText}</div>
       </div>
       <button class="btn-ghost btn-sm" onclick="resolveItem('${escAttr(item.id)}','${item.kind}')">${doneLabel}</button>
     </div>`;
@@ -1197,8 +1204,13 @@ async function resolveItem(id, kind){
     await apiPost('resolveReminder', { id });
     STATE.reminders = STATE.reminders.filter(r => r.id !== id);
   } else if (isLocalOnly){
-    // Follow-up này chưa thực sự lưu vào Sheet (mới ghi tạm) — chỉ cần bỏ khỏi danh sách local
+    // Follow-up này chưa thực sự lưu vào Sheet (mới ghi tạm) — phải xoá luôn khỏi hàng đợi (pendingBatch)
+    // và nhật ký phiên (sessionLog), không thì nó vẫn bị gửi lên Sheet khi TA bấm "Tạo báo cáo buổi học"
+    // và hiện lại ở lần mở app sau, dù đã bấm "Đã kiểm tra" từ trước.
     STATE.pendingFollowUps = STATE.pendingFollowUps.filter(f => f.id !== id);
+    STATE.pendingBatch.errors = STATE.pendingBatch.errors.filter(x => x.localId !== id);
+    STATE.sessionLog = STATE.sessionLog.filter(e => e.localId !== id);
+    savePendingToLocalStorage();
   } else {
     await apiPost('resolveFollowUp', { id });
     STATE.pendingFollowUps = STATE.pendingFollowUps.filter(f => f.id !== id);
@@ -1305,7 +1317,10 @@ let sessionLogExpandedGroups = new Set(); // nhóm nào đang mở rộng (mặc
 
 function renderSessionLog(){
   const box = document.getElementById('sessionLogList');
-  const visibleEntries = STATE.sessionLog.filter(e => !e.reportExempt);
+  const currentCls = document.getElementById('classSelect') ? document.getElementById('classSelect').value : '';
+  // Chỉ hiện mục của LỚP ĐANG CHỌN — vì khi "Tạo báo cáo buổi học" cũng chỉ gom đúng lớp đang chọn,
+  // hiện lẫn lớp khác sẽ khiến TA tưởng nhầm là những mục đó cũng nằm trong report sắp tạo.
+  const visibleEntries = STATE.sessionLog.filter(e => !e.reportExempt && (!currentCls || e.className === currentCls));
   if (!visibleEntries.length){
     box.innerHTML = `<p class="empty-note">Chưa nhập gì trong phiên này.</p>`;
     return;
@@ -1729,8 +1744,17 @@ function buildReportLines(cls, date){
     scoreGroups.get(key).items.push(t);
   });
   scoreGroups.forEach(g => {
-    const studentsStr = g.items.map(t => `${t.studentName} ${lowerFirstChar(t.score || t.note || 'không có điểm')}`).join('; ');
-    lines.push(`${g.testType}${g.unit ? ' - ' + g.unit : ''}${g.totalScore ? ' (' + g.totalScore + ')' : ''}: ${studentsStr}`);
+    const resultOf = t => lowerFirstChar(t.score || t.note || 'không có điểm');
+    const prefix = `${g.testType}${g.unit ? ' - ' + g.unit : ''}${g.totalScore ? ' (' + g.totalScore + ')' : ''}`;
+    const sameResult = g.items.length > 1 && g.items.every(t => resultOf(t) === resultOf(g.items[0]));
+    if (sameResult){
+      // Nhiều học sinh cùng 1 kết quả -> gộp gọn: "... chưa kỹ: A, B, C"
+      const names = g.items.map(t => t.studentName).join(', ');
+      lines.push(`${prefix} ${resultOf(g.items[0])}: ${names}`);
+    } else {
+      const studentsStr = g.items.map(t => `${t.studentName} ${resultOf(t)}`).join('; ');
+      lines.push(`${prefix}: ${studentsStr}`);
+    }
   });
 
   // Nhóm nộp bài / kiểm tra theo loại cột
@@ -1900,10 +1924,10 @@ function renderMgmtStudentList(){
   badge.textContent = cls ? `Sĩ số: ${list.length}` : '';
 
   if (!list.length){ box.innerHTML = `<p class="empty-note">Lớp này chưa có học sinh.</p>`; return; }
-  box.innerHTML = list.map(s => `
+  box.innerHTML = list.map((s, i) => `
     <div class="mgmt-item">
       <span>${esc(s.name)}</span>
-      <button class="btn-ghost btn-sm" onclick="mgmtDeleteStudent('${escAttr(s.name)}','${escAttr(s.className)}')">Xoá</button>
+      <button class="btn-ghost btn-sm" onclick="mgmtDeleteStudent(${i},'${escAttr(s.className)}','${escAttr(s.name)}')">Xoá</button>
     </div>`).join('');
 }
 
@@ -1921,10 +1945,17 @@ async function mgmtAddStudent(){
   toast('Đã thêm học sinh ' + val);
 }
 
-async function mgmtDeleteStudent(name, className){
+async function mgmtDeleteStudent(index, className, name){
   if (!confirm(`Xoá học sinh "${name}"?`)) return;
-  await apiPost('deleteStudent', { studentName: name, className });
-  STATE.students = STATE.students.filter(s => !(s.name === name && s.className === className));
+  // Dùng vị trí (index) trong danh sách của lớp để xoá đúng 1 người — không dùng tên,
+  // để tránh trường hợp 2 học sinh trùng tên (VD "Quân" và "Quân") bị xoá nhầm cả 2.
+  await apiPost('deleteStudent', { studentIndex: index, className });
+  const classList = STATE.students.filter(s => s.className === className);
+  const target = classList[index];
+  if (target){
+    const globalIdx = STATE.students.indexOf(target);
+    if (globalIdx !== -1) STATE.students.splice(globalIdx, 1);
+  }
   renderAll();
   renderManagementView();
   toast('Đã xoá học sinh ' + name);
