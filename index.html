@@ -376,6 +376,21 @@
 
     <div class="row">
       <div class="field">
+        <label>Loại</label>
+        <div class="chip-row">
+          <button type="button" class="chip" id="att_chip_absent_excused" onclick="selectAttendanceType('absent_excused')">Vắng (P)</button>
+          <button type="button" class="chip" id="att_chip_absent_unexcused" onclick="selectAttendanceType('absent_unexcused')">Vắng (KP)</button>
+          <button type="button" class="chip" id="att_chip_late" onclick="selectAttendanceType('late')">Muộn</button>
+        </div>
+      </div>
+    </div>
+
+    <label class="checkbox-row" style="margin-bottom:14px;">
+      <input type="checkbox" id="attendanceMultiModeCheck" onchange="toggleAttendanceMultiMode()"> Nhiều học sinh cùng loại này
+    </label>
+
+    <div class="row" id="attendanceSingleStudentRow">
+      <div class="field">
         <label>Học sinh</label>
         <select id="attendanceStudentSelect" onchange="toggleStudentAddBox('attendanceStudentSelect')"></select>
         <div class="inline-add" id="attendanceStudentSelect_addBox" style="display:none;">
@@ -385,14 +400,14 @@
       </div>
     </div>
 
-    <div class="row">
+    <div class="row" id="attendanceMultiStudentRow" style="display:none;">
       <div class="field">
-        <label>Loại</label>
-        <div class="chip-row">
-          <button type="button" class="chip" id="att_chip_absent_excused" onclick="selectAttendanceType('absent_excused')">Vắng (P)</button>
-          <button type="button" class="chip" id="att_chip_absent_unexcused" onclick="selectAttendanceType('absent_unexcused')">Vắng (KP)</button>
-          <button type="button" class="chip" id="att_chip_late" onclick="selectAttendanceType('late')">Muộn</button>
+        <label>Chọn các học sinh vắng/muộn</label>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <button type="button" class="btn-ghost btn-sm" onclick="toggleAllAttendanceMultiStudents(true)">Chọn tất cả</button>
+          <button type="button" class="btn-ghost btn-sm" onclick="toggleAllAttendanceMultiStudents(false)">Bỏ chọn tất cả</button>
         </div>
+        <div id="attendanceMultiStudentList" class="session-log-frame" style="max-height:240px;overflow-y:auto;"></div>
       </div>
     </div>
 
@@ -582,9 +597,34 @@
 
   </div>
 
-  <!-- BƯỚC 5: HOÀN TẤT BÁO CÁO BUỔI HỌC -->
+  <!-- BƯỚC 7: TẠO HOMEWORK (BTVN) — TUỲ CHỌN -->
   <div class="card" data-step="7">
-    <h2><span class="step-num">7</span>Hoàn tất báo cáo buổi học</h2>
+    <h2><span class="step-num">7</span>Tạo Homework (BTVN) — tuỳ chọn</h2>
+    <p class="hint">Không bắt buộc — TA nào muốn tự viết Homework riêng thì bỏ qua mục này. Nếu bật, phần Homework sẽ tự ghép chung vào báo cáo ở Bước 8 (Homework trước, Tình hình học tập sau) để copy 1 lần lên Classroom.</p>
+
+    <label class="checkbox-row" style="margin-bottom:14px;">
+      <input type="checkbox" id="homeworkEnableCheck" onchange="toggleHomeworkSection()"> Tạo Homework cho báo cáo này
+    </label>
+
+    <div id="homeworkFieldsBox" style="display:none;">
+      <div class="row">
+        <div class="field">
+          <label>Loại buổi học</label>
+          <div class="chip-row">
+            <button type="button" class="chip" id="hw_chip_grammar" onclick="selectHomeworkGroup('grammar')">Buổi học Ngữ pháp</button>
+            <button type="button" class="chip" id="hw_chip_speaking" onclick="selectHomeworkGroup('speaking')">Buổi học Nói + Đọc</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="homeworkItemsBox"></div>
+      <p class="footnote" style="margin:6px 0 0;">Bỏ trống ô Unit ở mục nào thì mục đó sẽ không được thêm vào Homework. Bỏ tick mục nào thì mục đó cũng không xuất hiện.</p>
+    </div>
+  </div>
+
+  <!-- BƯỚC 5: HOÀN TẤT BÁO CÁO BUỔI HỌC -->
+  <div class="card" data-step="8">
+    <h2><span class="step-num">8</span>Hoàn tất báo cáo buổi học</h2>
     <p class="hint">Toàn bộ dữ liệu TA nhập ở các mục trên chỉ mới ghi tạm trên trình duyệt. Bấm "Tạo báo cáo buổi học" bên dưới để lưu chính thức lên hệ thống.</p>
 
     <div style="display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin:0 0 6px;">
@@ -704,6 +744,24 @@ async function withLoadingButton(btnId, loadingText, fn){
   }
 }
 
+function sleep(ms){ return new Promise(resolve => setTimeout(resolve, ms)); }
+
+// Apps Script Web App thỉnh thoảng bị lỗi mạng/redirect thoáng qua (WiFi/4G chập chờn, Google
+// xử lý chậm bước redirect nội bộ...) khiến fetch() ném exception dù server không hề có vấn đề gì.
+// Tự động thử lại vài lần trước khi báo lỗi đỏ cho TA, để mấy lần chập chờn ngắn tự vượt qua được.
+async function fetchWithRetry(url, maxRetries=2){
+  let lastErr;
+  for (let attempt = 0; attempt <= maxRetries; attempt++){
+    try {
+      return await fetch(url);
+    } catch (err){
+      lastErr = err;
+      if (attempt < maxRetries) await sleep(500 * (attempt + 1)); // chờ tăng dần: 500ms, 1000ms...
+    }
+  }
+  throw lastErr;
+}
+
 async function apiGet(action, params={}){
   const allParams = Object.assign({ action }, params);
   const query = Object.keys(allParams)
@@ -711,7 +769,7 @@ async function apiGet(action, params={}){
     .join('&');
   const fullUrl = CONFIG.API_URL + (CONFIG.API_URL.indexOf('?') === -1 ? '?' : '&') + query;
   try {
-    const res = await fetch(fullUrl);
+    const res = await fetchWithRetry(fullUrl);
     const text = await res.text();
     // Nếu Apps Script chưa được cấp quyền truy cập (chưa deploy đúng hoặc session hết hạn),
     // Google sẽ trả về trang HTML đăng nhập thay vì JSON — phát hiện sớm để báo lỗi phân quyền rõ ràng.
@@ -752,7 +810,7 @@ async function apiPost(action, payload){
   const fullUrl = CONFIG.API_URL + (CONFIG.API_URL.indexOf('?') === -1 ? '?' : '&') + query;
 
   try {
-    const res = await fetch(fullUrl);
+    const res = await fetchWithRetry(fullUrl);
     const text = await res.text();
     const contentType = (res.headers.get('content-type') || '').toLowerCase();
     const trimmed = text.trimStart();
@@ -876,6 +934,7 @@ function renderClassSelect(){
     renderSessionLog();
     if (document.getElementById('errorMultiModeCheck').checked) renderErrorMultiStudentList();
     if (document.getElementById('scoreMultiModeCheck').checked) renderScoreMultiStudentList();
+    if (document.getElementById('attendanceMultiModeCheck').checked) renderAttendanceMultiStudentList();
   };
   refreshTomSelect('classSelect');
 }
@@ -1123,6 +1182,157 @@ function renderErrorMultiStudentList(){
 
 function toggleAllErrorMultiStudents(checked){
   document.querySelectorAll('.error-multi-student-cb').forEach(cb => cb.checked = checked);
+}
+
+function toggleAttendanceMultiMode(){
+  const isMulti = document.getElementById('attendanceMultiModeCheck').checked;
+  document.getElementById('attendanceSingleStudentRow').style.display = isMulti ? 'none' : 'flex';
+  document.getElementById('attendanceMultiStudentRow').style.display = isMulti ? 'flex' : 'none';
+  if (isMulti) renderAttendanceMultiStudentList();
+  else refreshTomSelect('attendanceStudentSelect'); // TomSelect cần tính lại layout sau khi được hiện lại
+}
+
+function renderAttendanceMultiStudentList(){
+  const cls = document.getElementById('classSelect').value;
+  const list = STATE.students.filter(s => s.className === cls);
+  const box = document.getElementById('attendanceMultiStudentList');
+  if (!cls || cls === '__new__'){ box.innerHTML = `<p class="empty-note">Chọn lớp ở Bước 1 trước đã.</p>`; return; }
+  if (!list.length){ box.innerHTML = `<p class="empty-note">Lớp này chưa có học sinh.</p>`; return; }
+  box.innerHTML = list.map((s, i) => `
+    <label class="checkbox-row" style="padding:6px 0;">
+      <input type="checkbox" class="attendance-multi-student-cb" value="${escAttr(s.name)}"> ${i + 1}. ${esc(s.name)}
+    </label>`).join('');
+}
+
+function toggleAllAttendanceMultiStudents(checked){
+  document.querySelectorAll('.attendance-multi-student-cb').forEach(cb => cb.checked = checked);
+}
+
+/* ============== BƯỚC 7: TẠO HOMEWORK (BTVN) — TUỲ CHỌN ============== */
+const HOMEWORK_TEMPLATES = {
+  grammar: {
+    label: 'Buổi học Ngữ pháp',
+    items: [
+      { id: 'theory',    label: 'Học thuộc lý thuyết ngữ pháp', hasUnit: true,  build: (u, note) => joinHwParts(`Học thuộc lý thuyết ngữ pháp Unit ${u}`, note) },
+      { id: 'btvn',      label: 'Làm BTVN ngữ pháp',            hasUnit: true,  build: (u, note) => joinHwParts(`Làm BTVN ngữ pháp Unit ${u}`, note) },
+      { id: 'listening', label: 'Làm Listening',                hasUnit: true,  build: (u, note) => joinHwParts(`Làm Listening Unit ${u}`, note) },
+      { id: 'journal',   label: 'Đọc truyện và viết Journal',    hasUnit: false, build: (u, note) => joinHwParts(`Đọc truyện và viết Journal`, note) }
+    ]
+  },
+  speaking: {
+    label: 'Buổi học Nói + Đọc',
+    items: [
+      { id: 'vocab',     label: 'Học thuộc Từ vựng',            hasUnit: true,  build: (u, note) => joinHwParts(`Học thuộc Từ vựng Unit ${u}`, note) },
+      { id: 'reading',   label: 'Làm Reading',                  hasUnit: true,  build: (u, note) => joinHwParts(`Làm Reading Unit ${u}`, note) },
+      { id: 'listening', label: 'Làm Listening',                hasUnit: true,  build: (u, note) => joinHwParts(`Làm Listening Unit ${u}`, note) },
+      { id: 'padlet',    label: 'Thu âm padlet',                hasUnit: true,  unitLabel: 'Nội dung/ Unit', unitPlaceholder: 'VD: Unit 4, hoặc chủ đề bài nói', build: (u, note) => joinHwParts(`Thu âm padlet ${u}`, note) },
+      { id: 'journal',   label: 'Đọc truyện và viết Journal',    hasUnit: false, build: (u, note) => joinHwParts(`Đọc truyện và viết Journal`, note) }
+    ]
+  }
+};
+
+function joinHwParts(base, note){
+  return note ? `${base} - ${note}` : base;
+}
+
+let selectedHomeworkGroup = null;
+let homeworkCustomLines = ['']; // mỗi phần tử = 1 ô nhập riêng, bấm "+" để thêm ô mới — dễ dùng trên điện thoại hơn textarea nhiều dòng
+
+function toggleHomeworkSection(){
+  const on = document.getElementById('homeworkEnableCheck').checked;
+  document.getElementById('homeworkFieldsBox').style.display = on ? 'block' : 'none';
+}
+
+function selectHomeworkGroup(group){
+  selectedHomeworkGroup = group;
+  document.getElementById('hw_chip_grammar').classList.toggle('chip-active', group === 'grammar');
+  document.getElementById('hw_chip_speaking').classList.toggle('chip-active', group === 'speaking');
+  renderHomeworkItems();
+}
+
+function renderHomeworkItems(){
+  const box = document.getElementById('homeworkItemsBox');
+  if (!selectedHomeworkGroup){ box.innerHTML = ''; return; }
+  const group = HOMEWORK_TEMPLATES[selectedHomeworkGroup];
+  // Mỗi mục tách làm 2 tầng: dòng checkbox riêng ở trên, rồi tới hàng Unit + Ghi chú thêm bên dưới —
+  // để tránh 2 field cao thấp khác nhau (checkbox ngắn, input có label cao) bị canh lệch khi đặt chung 1 hàng.
+  const itemsHtml = group.items.map((item, i) => `
+    <div style="padding:12px 0;${i > 0 ? 'border-top:1px solid var(--line);' : ''}">
+      <label class="checkbox-row" style="margin:0 0 10px;font-weight:600;">
+        <input type="checkbox" class="hw-item-cb" id="hw_cb_${item.id}" checked> ${esc(item.label)}
+      </label>
+      <div class="row" style="margin-bottom:0;">
+        ${item.hasUnit ? `<div class="field" style="flex:0 0 ${item.unitLabel ? '190px' : '110px'};">
+          <label>${esc(item.unitLabel || 'Unit')}</label>
+          <input type="text" id="hw_unit_${item.id}" placeholder="${esc(item.unitPlaceholder || 'VD: 4')}">
+        </div>` : ''}
+        <div class="field">
+          <label>GHI CHÚ</label>
+          <input type="text" id="hw_note_${item.id}">
+        </div>
+      </div>
+    </div>
+  `).join('');
+
+  // Bài tập bổ sung khác — tự do, không theo mẫu cố định. Mỗi ô nhập = 1 mục Homework riêng,
+  // bấm "+ Thêm bài tập" để tạo thêm ô mới (thay vì gõ xuống dòng trong textarea — bất tiện trên điện thoại).
+  const customHtml = `
+    <div style="padding:12px 0;border-top:1px solid var(--line);">
+      <label style="display:block;font-weight:600;font-size:13.5px;margin-bottom:8px;">+ Bài tập bổ sung khác (nếu có)</label>
+      <div id="homeworkCustomBox"></div>
+    </div>
+  `;
+
+  box.innerHTML = itemsHtml + customHtml;
+  renderHomeworkCustomBox();
+}
+
+function renderHomeworkCustomBox(){
+  const box = document.getElementById('homeworkCustomBox');
+  if (!box) return;
+  box.innerHTML = homeworkCustomLines.map((val, i) => `
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <input type="text" value="${escAttr(val)}" placeholder="VD: Làm phiếu bài tập photo trang 5" oninput="updateHomeworkCustomLine(${i}, this.value)" style="flex:1;">
+      ${homeworkCustomLines.length > 1 ? `<button type="button" class="btn-ghost btn-sm" onclick="removeHomeworkCustomLine(${i})">✕</button>` : ''}
+    </div>
+  `).join('') + `<button type="button" class="btn-ghost btn-sm" onclick="addHomeworkCustomLine()">+ Thêm bài tập</button>`;
+}
+
+function updateHomeworkCustomLine(i, val){
+  homeworkCustomLines[i] = val;
+}
+
+function addHomeworkCustomLine(){
+  homeworkCustomLines.push('');
+  renderHomeworkCustomBox();
+}
+
+function removeHomeworkCustomLine(i){
+  homeworkCustomLines.splice(i, 1);
+  if (!homeworkCustomLines.length) homeworkCustomLines = [''];
+  renderHomeworkCustomBox();
+}
+
+function buildHomeworkText(){
+  if (!selectedHomeworkGroup) return '';
+  const group = HOMEWORK_TEMPLATES[selectedHomeworkGroup];
+  const items = [];
+  group.items.forEach(item => {
+    const cb = document.getElementById('hw_cb_' + item.id);
+    if (!cb || !cb.checked) return;
+    const unit = item.hasUnit ? document.getElementById('hw_unit_' + item.id).value.trim() : '';
+    if (item.hasUnit && !unit) return; // chưa nhập Unit thì bỏ qua dòng này, tránh câu cụt
+    const note = document.getElementById('hw_note_' + item.id).value.trim();
+    items.push(item.build(unit, note));
+  });
+
+  // Các dòng bài tập bổ sung tự do — mỗi ô nhập (không rỗng) thành 1 mục riêng
+  homeworkCustomLines.map(l => l.trim()).filter(Boolean).forEach(line => items.push(line));
+
+  if (!items.length) return '';
+  // Đánh số thứ tự để học sinh biết rõ hôm đó có bao nhiêu mục cần hoàn thành
+  const numbered = items.map((text, i) => `${i + 1}. ${text}`);
+  return `Homework:\n` + numbered.join('\n');
 }
 
 function toggleScoreMultiMode(){
@@ -1598,9 +1808,11 @@ function selectAttendanceType(type){
 }
 
 function saveAttendance(){
-  const sel = requireStudent('attendanceStudentSelect');
-  if (!sel) return;
   if (!selectedAttendanceType) { toast('Chọn Vắng (P) / Vắng (KP) / Muộn trước đã', true); return; }
+
+  const isMulti = document.getElementById('attendanceMultiModeCheck').checked;
+  const cls = currentClass();
+  if (!cls) { toast('Chọn lớp ở Bước 1 trước đã', true); return; }
 
   const note = document.getElementById('attendanceNoteInput').value;
   const date = document.getElementById('dateInput').value;
@@ -1614,16 +1826,36 @@ function saveAttendance(){
     label = selectedAttendanceType === 'absent_excused' ? 'Vắng (có phép)' : 'Vắng (không phép)';
   }
 
-  const payload = { date, className: sel.cls, studentName: sel.stu, type, detail, note };
-  queuePending('attendance', payload, `${sel.stu} — ${label}`, label);
+  const logOneStudent = (studentName) => {
+    const payload = { date, className: cls, studentName, type, detail, note };
+    queuePending('attendance', payload, `${studentName} — ${label}`, label);
+  };
 
-  document.getElementById('attendanceNoteInput').value = '';
-  selectedAttendanceType = null;
-  ['att_chip_absent_excused', 'att_chip_absent_unexcused', 'att_chip_late'].forEach(id => {
-    document.getElementById(id).classList.remove('chip-active');
-  });
-  savePendingToLocalStorage();
-  toast('Đã ghi nhận');
+  const resetCommon = () => {
+    document.getElementById('attendanceNoteInput').value = '';
+    selectedAttendanceType = null;
+    ['att_chip_absent_excused', 'att_chip_absent_unexcused', 'att_chip_late'].forEach(id => {
+      document.getElementById(id).classList.remove('chip-active');
+    });
+    savePendingToLocalStorage();
+    toast('Đã ghi nhận');
+  };
+
+  if (isMulti){
+    const checked = Array.from(document.querySelectorAll('.attendance-multi-student-cb:checked')).map(cb => cb.value);
+    if (!checked.length) { toast('Chọn ít nhất 1 học sinh', true); return; }
+
+    checked.forEach(logOneStudent);
+    document.querySelectorAll('.attendance-multi-student-cb').forEach(cb => cb.checked = false);
+    resetCommon();
+    return;
+  }
+
+  const sel = requireStudent('attendanceStudentSelect');
+  if (!sel) return;
+  logOneStudent(sel.stu);
+  setSelectValue('attendanceStudentSelect', ''); // trả dropdown về rỗng để TA biết chọn tiếp tên khác
+  resetCommon();
 }
 
 function toggleReminderStudentField(){
@@ -1867,12 +2099,18 @@ async function generateDayReport(){
     const [y, m, d] = date.split('-');
     const lines = buildReportLines(cls, date);
 
-    let out = `TÌNH HÌNH HỌC TẬP NGÀY ${d}/${m}/${y} — LỚP ${cls}\n\n`;
-    if (!lines.length){
-      out += `(Không có ghi nhận nào cho buổi học này)\n`;
-    } else {
+    let out = '';
+    if (document.getElementById('homeworkEnableCheck').checked){
+      const hwText = buildHomeworkText();
+      if (hwText) out += hwText + '\n\n';
+    }
+    // Chỉ thêm phần "Tình hình học tập" khi thực sự có dữ liệu — báo cáo này gửi thẳng cho
+    // học sinh/phụ huynh nên không ghi mấy dòng kiểu "(Không có ghi nhận nào...)" vào đó.
+    if (lines.length){
+      out += `TÌNH HÌNH HỌC TẬP NGÀY ${d}/${m}/${y} — LỚP ${cls}\n\n`;
       lines.forEach((line, i) => { out += `[${i + 1}] ${line}\n`; });
     }
+    out = out.trim();
 
     document.getElementById('dayReportOutput').value = out;
     toast('Đã lưu snapshot report gần nhất');
