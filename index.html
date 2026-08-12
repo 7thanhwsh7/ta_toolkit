@@ -719,7 +719,7 @@ let STATE = {
   submittedToday: { testScores: [], errors: [], attendance: [] }  // đã gửi Sheet trong phiên này
 };
 
-const SHEET_NAME_BY_TYPE = { testScores: 'TỔNG HỢP ĐIỂM CÁC LỚP', errors: 'TỔNG HỢP LỖI VI PHẠM', attendance: 'ĐIỂM DANH' };
+const SHEET_NAME_BY_TYPE = { testScores: 'sys_TỔNG HỢP ĐIỂM CÁC LỚP', errors: 'sys_TỔNG HỢP LỖI VI PHẠM', attendance: 'sys_ĐIỂM DANH' };
 function genLocalId(){ return 'local_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8); }
 
 /* ============== HELPERS ============== */
