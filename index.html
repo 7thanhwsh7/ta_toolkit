@@ -1977,19 +1977,27 @@ function buildReportLines(cls, date){
     scoreGroups.get(key).items.push(t);
   });
   scoreGroups.forEach(g => {
-    const resultOf = t => lowerFirstChar(t.score || t.note || 'không có điểm');
     const prefix = `${g.testType}${g.unit ? ' - ' + g.unit : ''}${g.totalScore ? ' (' + g.totalScore + ')' : ''}`;
 
-    // Gom các học sinh có CÙNG kết quả vào chung 1 cụm, dù trong bài có nhiều kết quả khác nhau
-    // (VD vài bạn "chưa thuộc bài", vài bạn khác "học chưa kỹ") -> báo cáo gọn theo từng cụm,
-    // không liệt kê lặp lại từng người một dòng dài.
-    const resultGroups = new Map(); // kết quả -> danh sách tên
+    // Có điểm số cụ thể (VD 15, 7/10...) -> hiện riêng từng người theo "Tên điểm", KHÔNG gộp,
+    // vì điểm số mỗi người thường khác nhau, gộp theo điểm dễ gây nhầm.
+    // Chỉ có ghi chú dạng chữ, không có điểm số (VD "chưa làm bài") -> gộp theo cụm lý do giống
+    // nhau, để báo cáo gọn khi nhiều học sinh cùng 1 lý do.
+    const scoreParts = [];
+    const noteGroups = new Map(); // lý do -> danh sách tên
     g.items.forEach(t => {
-      const r = resultOf(t);
-      if (!resultGroups.has(r)) resultGroups.set(r, []);
-      resultGroups.get(r).push(t.studentName);
+      const hasScore = t.score !== undefined && t.score !== null && t.score !== '';
+      if (hasScore){
+        const scoreText = t.note ? `${t.score} (${lowerFirstChar(t.note)})` : `${t.score}`;
+        scoreParts.push(`${t.studentName} ${scoreText}`);
+      } else {
+        const reason = lowerFirstChar(t.note || 'không có điểm');
+        if (!noteGroups.has(reason)) noteGroups.set(reason, []);
+        noteGroups.get(reason).push(t.studentName);
+      }
     });
-    const parts = Array.from(resultGroups.entries()).map(([result, names]) => `${result}: ${names.join(', ')}`);
+    const noteParts = Array.from(noteGroups.entries()).map(([reason, names]) => `${reason}: ${names.join(', ')}`);
+    const parts = [...scoreParts, ...noteParts];
     lines.push(`${prefix} ${parts.join('; ')}`);
   });
 
