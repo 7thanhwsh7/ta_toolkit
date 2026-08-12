@@ -1979,15 +1979,18 @@ function buildReportLines(cls, date){
   scoreGroups.forEach(g => {
     const resultOf = t => lowerFirstChar(t.score || t.note || 'không có điểm');
     const prefix = `${g.testType}${g.unit ? ' - ' + g.unit : ''}${g.totalScore ? ' (' + g.totalScore + ')' : ''}`;
-    const sameResult = g.items.length > 1 && g.items.every(t => resultOf(t) === resultOf(g.items[0]));
-    if (sameResult){
-      // Nhiều học sinh cùng 1 kết quả -> gộp gọn: "... chưa kỹ: A, B, C"
-      const names = g.items.map(t => t.studentName).join(', ');
-      lines.push(`${prefix} ${resultOf(g.items[0])}: ${names}`);
-    } else {
-      const studentsStr = g.items.map(t => `${t.studentName} ${resultOf(t)}`).join('; ');
-      lines.push(`${prefix}: ${studentsStr}`);
-    }
+
+    // Gom các học sinh có CÙNG kết quả vào chung 1 cụm, dù trong bài có nhiều kết quả khác nhau
+    // (VD vài bạn "chưa thuộc bài", vài bạn khác "học chưa kỹ") -> báo cáo gọn theo từng cụm,
+    // không liệt kê lặp lại từng người một dòng dài.
+    const resultGroups = new Map(); // kết quả -> danh sách tên
+    g.items.forEach(t => {
+      const r = resultOf(t);
+      if (!resultGroups.has(r)) resultGroups.set(r, []);
+      resultGroups.get(r).push(t.studentName);
+    });
+    const parts = Array.from(resultGroups.entries()).map(([result, names]) => `${result}: ${names.join(', ')}`);
+    lines.push(`${prefix} ${parts.join('; ')}`);
   });
 
   // Nhóm nộp bài / kiểm tra theo loại cột
@@ -1999,8 +2002,15 @@ function buildReportLines(cls, date){
   });
   submitGroups.forEach((items, testType) => {
     const [yes, no] = getSubmissionLabels(testType);
-    const studentsStr = items.map(t => `${t.studentName} ${lowerFirstChar(t.submitted ? yes : no)}`).join('; ');
-    lines.push(`${testType}: ${studentsStr}`);
+    // Gom theo Đã nộp / Chưa nộp thành từng cụm, cùng nguyên tắc với phần điểm số ở trên.
+    const resultGroups = new Map();
+    items.forEach(t => {
+      const r = lowerFirstChar(t.submitted ? yes : no);
+      if (!resultGroups.has(r)) resultGroups.set(r, []);
+      resultGroups.get(r).push(t.studentName);
+    });
+    const parts = Array.from(resultGroups.entries()).map(([result, names]) => `${result}: ${names.join(', ')}`);
+    lines.push(`${testType}: ${parts.join('; ')}`);
   });
 
   // Lỗi vi phạm — nhóm theo từng loại lỗi để báo cáo ngắn hơn
