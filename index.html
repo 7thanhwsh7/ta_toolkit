@@ -1217,23 +1217,30 @@ const HOMEWORK_TEMPLATES = {
   grammar: {
     label: 'Buổi học Ngữ pháp',
     items: [
-      { id: 'theory',    label: 'Học thuộc lý thuyết ngữ pháp', hasUnit: true,  build: (u, note) => joinHwParts(`Học thuộc lý thuyết ngữ pháp Unit ${u}`, note) },
-      { id: 'btvn',      label: 'Làm BTVN ngữ pháp',            hasUnit: true,  build: (u, note) => joinHwParts(`Làm BTVN ngữ pháp Unit ${u}`, note) },
-      { id: 'listening', label: 'Làm Listening',                hasUnit: true,  build: (u, note) => joinHwParts(`Làm Listening Unit ${u}`, note) },
+      { id: 'theory',    label: 'Học thuộc lý thuyết ngữ pháp', hasUnit: true,  build: (u, note) => joinHwParts(`Học thuộc lý thuyết ngữ pháp ${withUnitPrefix(u)}`, note) },
+      { id: 'btvn',      label: 'Làm BTVN ngữ pháp',            hasUnit: true,  build: (u, note) => joinHwParts(`Làm BTVN ngữ pháp ${withUnitPrefix(u)}`, note) },
+      { id: 'listening', label: 'Làm Listening',                hasUnit: true,  build: (u, note) => joinHwParts(`Làm Listening ${withUnitPrefix(u)}`, note) },
       { id: 'journal',   label: 'Đọc truyện và viết Journal',    hasUnit: false, build: (u, note) => joinHwParts(`Đọc truyện và viết Journal`, note) }
     ]
   },
   speaking: {
     label: 'Buổi học Nói + Đọc',
     items: [
-      { id: 'vocab',     label: 'Học thuộc Từ vựng',            hasUnit: true,  build: (u, note) => joinHwParts(`Học thuộc Từ vựng Unit ${u}`, note) },
-      { id: 'reading',   label: 'Làm Reading',                  hasUnit: true,  build: (u, note) => joinHwParts(`Làm Reading Unit ${u}`, note) },
-      { id: 'listening', label: 'Làm Listening',                hasUnit: true,  build: (u, note) => joinHwParts(`Làm Listening Unit ${u}`, note) },
+      { id: 'vocab',     label: 'Học thuộc Từ vựng',            hasUnit: true,  build: (u, note) => joinHwParts(`Học thuộc Từ vựng ${withUnitPrefix(u)}`, note) },
+      { id: 'reading',   label: 'Làm Reading',                  hasUnit: true,  build: (u, note) => joinHwParts(`Làm Reading ${withUnitPrefix(u)}`, note) },
+      { id: 'listening', label: 'Làm Listening',                hasUnit: true,  build: (u, note) => joinHwParts(`Làm Listening ${withUnitPrefix(u)}`, note) },
       { id: 'padlet',    label: 'Thu âm padlet',                hasUnit: true,  unitLabel: 'Nội dung/ Unit', unitPlaceholder: 'VD: Unit 4, hoặc chủ đề bài nói', build: (u, note) => joinHwParts(`Thu âm padlet ${u}`, note) },
       { id: 'journal',   label: 'Đọc truyện và viết Journal',    hasUnit: false, build: (u, note) => joinHwParts(`Đọc truyện và viết Journal`, note) }
     ]
   }
 };
+
+// [MỚI] Tránh lặp chữ "Unit" — nếu giá trị đã có sẵn chữ "Unit" ở đầu (VD lấy từ dropdown lộ
+// trình sách: "Unit 10B", "Unit 9+10") thì dùng nguyên; nếu chỉ là số/chữ tự gõ tay (VD "4") thì
+// vẫn tự thêm "Unit " phía trước như trước giờ.
+function withUnitPrefix(u){
+  return /^unit\b/i.test(String(u).trim()) ? u : `Unit ${u}`;
+}
 
 function joinHwParts(base, note){
   return note ? `${base} - ${note}` : base;
@@ -1427,8 +1434,11 @@ function buildHomeworkText(date){
     if (!cb || !cb.checked) return;
     const unit = item.hasUnit ? getEffectiveHwUnit(item.id) : '';
     if (item.hasUnit && !unit) return; // chưa nhập Unit thì bỏ qua dòng này, tránh câu cụt
+    // Bỏ ngoặc vuông khi HIỂN THỊ trong nội dung báo cáo (dễ đọc cho HS/PH) — việc gửi cập nhật
+    // lộ trình lên hệ thống (advanceHomeworkUnits) vẫn dùng giá trị gốc có ngoặc riêng, không đụng.
+    const displayUnit = unit.replace(/^\[|\]$/g, '');
     const note = document.getElementById('hw_note_' + item.id).value.trim();
-    items.push(item.build(unit, note));
+    items.push(item.build(displayUnit, note));
   });
 
   // Các dòng bài tập bổ sung tự do — mỗi ô nhập (không rỗng) thành 1 mục riêng
