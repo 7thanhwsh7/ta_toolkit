@@ -714,6 +714,8 @@ let STATE = {
   pendingFollowUps: [],
   reminders: [],
   classProgress: [],
+  homeworkProgress: [],
+  syllabusBooks: {},
   sessionLog: [],
   pendingBatch: { testScores: [], errors: [], attendance: [] },   // ghi tạm, chưa gửi Sheet
   submittedToday: { testScores: [], errors: [], attendance: [] }  // đã gửi Sheet trong phiên này
@@ -880,6 +882,8 @@ async function loadData(){
   STATE.pendingFollowUps = data.pendingFollowUps || [];
   STATE.reminders = data.pendingReminders || [];
   STATE.classProgress = data.classProgress || [];
+  STATE.homeworkProgress = data.homeworkProgress || [];
+  STATE.syllabusBooks = data.syllabusBooks || {};
 
   try {
     renderAll();
@@ -1250,6 +1254,106 @@ function selectHomeworkGroup(group){
   renderHomeworkItems();
 }
 
+// [MỚI] Reading/Listening/Vocab (Học thuộc Từ vựng) đều có lộ trình theo dõi riêng
+// (input_LỘ TRÌNH BTVN + input_ĐẦU SÁCH BTVN) — hệ thống tự gợi ý Unit tiếp theo qua dropdown
+// (theo đúng NHÃN trong lộ trình sách, không phải số thuần). TA chỉ cần xác nhận hoặc chọn Unit
+// khác nếu cần skip bài / sửa lỗi giao sai — mỗi mục tự chạy tiếp ĐỘC LẬP từ đúng lựa chọn cuối
+// cùng TA đã chọn cho mục đó, không bị ràng buộc lẫn nhau (VD Vocab lỡ giao lệch thì sửa 1 lần,
+// từ hôm sau nó tự tiếp tục đúng từ điểm đã sửa, không tự nhảy lại theo Reading nữa).
+const HW_SUBJECT_BY_ITEM_ID = { reading: 'Reading', listening: 'Listening', vocab: 'Vocab' };
+
+// Trả về { bookName, list, currentIndex } nếu lớp+môn này đã được GV khai báo sẵn lộ trình VÀ
+// sách đó có danh sách Unit định nghĩa trong input_ĐẦU SÁCH BTVN — ngược lại trả về null (TA gõ tay).
+function getSyllabusPosition(subjectLabel){
+  const cls = document.getElementById('classSelect').value;
+  if (!cls || cls === '__new__') return null;
+  const row = STATE.homeworkProgress.find(p => p.className === cls && p.subject === subjectLabel);
+  if (!row || !row.bookName) return null;
+  const list = STATE.syllabusBooks[row.bookName];
+  if (!list || !list.length) return null;
+  let idx = list.indexOf(row.nextUnit);
+  if (idx === -1) idx = 0; // chưa có tiến độ ghi nhận, hoặc không khớp -> bắt đầu từ đầu sách
+  return { bookName: row.bookName, list, currentIndex: idx };
+}
+
+// [MỚI] Đánh dấu 1 bước trong lộ trình là "không giao BTVN hôm đó" bằng cách gõ trong ngoặc vuông
+// trong input_ĐẦU SÁCH BTVN, VD gõ "[Unit 1+2]" thay vì "Unit 1+2" cho buổi video/gộp bài. Khi
+// Reading/Listening đang ở đúng bước này, hệ thống tự hiện thông báo thay vì dropdown, tự bỏ tick
+// mục đó, và tự chuyển tiếp sau khi tạo báo cáo — TA không cần làm gì thêm cho mục đó hôm đó.
+function isMarkerUnit(label){
+  return /^\[.*\]$/.test(String(label || '').trim());
+}
+
+function renderHwUnitField(item){
+  const subjectLabel = HW_SUBJECT_BY_ITEM_ID[item.id];
+  if (!subjectLabel){
+    return `<div class="field" style="flex:0 0 ${item.unitLabel ? '190px' : '110px'};">
+      <label>${esc(item.unitLabel || 'Unit')}</label>
+      <input type="text" id="hw_unit_${item.id}" placeholder="${esc(item.unitPlaceholder || 'VD: 4')}">
+    </div>`;
+  }
+
+  const syl = getSyllabusPosition(subjectLabel);
+
+  if (syl && isMarkerUnit(syl.list[syl.currentIndex])){
+    // Bước hiện tại là buổi không giao BTVN theo lộ trình -> tự bỏ tick checkbox (mặc định không
+    // đưa vào báo cáo), và chuyển ô Unit thành NHẬP TAY TỰ DO (không khoá cứng) — để nếu GV lỡ
+    // giao thêm bài gì đó riêng cho buổi này, TA vẫn gõ được rồi tự tick vào để đưa vào báo cáo.
+    // Dù TA có gõ thêm hay không, lộ trình vẫn TỰ ĐỘNG chuyển sang bước tiếp theo sau khi tạo báo
+    // cáo (xem phần tự động ở generateDayReport), không phụ thuộc vào việc TA có tick mục này.
+    setTimeout(() => { const cb = document.getElementById('hw_cb_' + item.id); if (cb) cb.checked = false; }, 0);
+    return `<div class="field" style="flex:0 0 250px;">
+      <label>Unit</label>
+      <input type="text" id="hw_unit_${item.id}" placeholder="Để trống nếu không giao gì thêm">
+      <div class="footnote" style="margin-top:4px;line-height:1.5;">
+        Theo lộ trình, hôm nay không giao BTVN — buổi gộp/video: <b>${esc(syl.list[syl.currentIndex].replace(/^\[|\]$/g, ''))}</b>.
+        Nếu GV giao thêm bài riêng, gõ vào đây rồi tự tick mục này.
+      </div>
+    </div>`;
+  }
+
+  const optionsHtml = [];
+  if (syl){
+    for (let d = -1; d <= 2; d++){
+      const idx = syl.currentIndex + d;
+      if (idx < 0 || idx >= syl.list.length) continue;
+      const label = syl.list[idx];
+      const isCurrent = idx === syl.currentIndex;
+      optionsHtml.push(`<option value="${escAttr(label)}"${isCurrent ? ' selected' : ''}>${esc(label)}${isCurrent ? ' (gợi ý tiếp theo)' : ''}</option>`);
+    }
+  }
+  const bookLabel = syl ? `<div class="footnote" style="margin-top:4px;">Cuốn: ${esc(syl.bookName)}</div>` : '';
+
+  return `<div class="field" style="flex:0 0 190px;">
+    <label>Unit</label>
+    <select id="hw_unit_${item.id}" onchange="toggleHwUnitManual('${item.id}')">
+      ${optionsHtml.join('')}
+      <option value="">Khác (tự nhập)...</option>
+    </select>
+    <input type="text" id="hw_unit_${item.id}_manual" placeholder="VD: Unit 4A" style="margin-top:6px;display:${syl ? 'none' : 'block'};">
+    ${bookLabel}
+  </div>`;
+}
+
+function toggleHwUnitManual(itemId){
+  const sel = document.getElementById('hw_unit_' + itemId);
+  const manual = document.getElementById('hw_unit_' + itemId + '_manual');
+  if (sel && manual) manual.style.display = sel.value === '' ? 'block' : 'none';
+}
+
+function getEffectiveHwUnit(itemId){
+  const el = document.getElementById('hw_unit_' + itemId);
+  if (!el) return '';
+  if (el.tagName === 'SELECT'){
+    if (el.value === ''){
+      const manual = document.getElementById('hw_unit_' + itemId + '_manual');
+      return manual ? manual.value.trim() : '';
+    }
+    return el.value.trim();
+  }
+  return el.value.trim();
+}
+
 function renderHomeworkItems(){
   const box = document.getElementById('homeworkItemsBox');
   if (!selectedHomeworkGroup){ box.innerHTML = ''; return; }
@@ -1262,10 +1366,7 @@ function renderHomeworkItems(){
         <input type="checkbox" class="hw-item-cb" id="hw_cb_${item.id}" checked> ${esc(item.label)}
       </label>
       <div class="row" style="margin-bottom:0;">
-        ${item.hasUnit ? `<div class="field" style="flex:0 0 ${item.unitLabel ? '190px' : '110px'};">
-          <label>${esc(item.unitLabel || 'Unit')}</label>
-          <input type="text" id="hw_unit_${item.id}" placeholder="${esc(item.unitPlaceholder || 'VD: 4')}">
-        </div>` : ''}
+        ${item.hasUnit ? renderHwUnitField(item) : ''}
         <div class="field">
           <label>GHI CHÚ</label>
           <input type="text" id="hw_note_${item.id}">
@@ -1320,7 +1421,7 @@ function buildHomeworkText(date){
   group.items.forEach(item => {
     const cb = document.getElementById('hw_cb_' + item.id);
     if (!cb || !cb.checked) return;
-    const unit = item.hasUnit ? document.getElementById('hw_unit_' + item.id).value.trim() : '';
+    const unit = item.hasUnit ? getEffectiveHwUnit(item.id) : '';
     if (item.hasUnit && !unit) return; // chưa nhập Unit thì bỏ qua dòng này, tránh câu cụt
     const note = document.getElementById('hw_note_' + item.id).value.trim();
     items.push(item.build(unit, note));
@@ -2122,6 +2223,35 @@ async function generateDayReport(){
     if (document.getElementById('homeworkEnableCheck').checked){
       const hwText = buildHomeworkText(date);
       if (hwText) out += hwText + '\n\n';
+    }
+
+    // [MỚI] Cập nhật "Unit tiếp theo" cho Reading/Listening/Vocab, để lần sau hệ thống tự gợi ý
+    // đúng — chạy nền, không cần chờ, không ảnh hưởng tốc độ tạo báo cáo. Chạy LUÔN dù có mở phần
+    // Homework hay không, vì còn phải tự chuyển tiếp qua các bước "không giao BTVN" (buổi video/
+    // gộp bài, đánh dấu bằng ngoặc vuông trong lộ trình) — những bước đó có thể không được TA tick
+    // (hoặc TA tick kèm gõ thêm bài riêng của GV), nên luôn tự kiểm tra + gửi riêng, không phụ
+    // thuộc vào việc TA có tick mục đó hay không, để lộ trình không bao giờ bị kẹt lại ở bước này.
+    const advanceItems = [];
+    if (document.getElementById('homeworkEnableCheck').checked){
+      Object.keys(HW_SUBJECT_BY_ITEM_ID).forEach(id => {
+        const cb = document.getElementById('hw_cb_' + id);
+        if (!cb || !cb.checked) return;
+        const unit = getEffectiveHwUnit(id);
+        if (unit) advanceItems.push({ subject: HW_SUBJECT_BY_ITEM_ID[id], unit });
+      });
+    }
+    // Với MỌI môn (Reading/Listening/Vocab), luôn kiểm tra riêng xem lớp đang dừng ở đúng 1 bước
+    // "không giao BTVN" hay không — nếu đúng, luôn gửi thêm để chuyển tiếp, kể cả khi môn đó đã
+    // được tick+gõ thêm bài riêng ở trên rồi (gửi trùng không sao — backend tự khớp đúng theo
+    // nhãn, phần gõ thêm không khớp lộ trình sẽ tự bị bỏ qua, chỉ phần nhãn marker mới có tác dụng).
+    Object.values(HW_SUBJECT_BY_ITEM_ID).forEach(subject => {
+      const syl = getSyllabusPosition(subject);
+      if (!syl) return;
+      const currentLabel = syl.list[syl.currentIndex];
+      if (isMarkerUnit(currentLabel)) advanceItems.push({ subject, unit: currentLabel });
+    });
+    if (advanceItems.length){
+      apiPost('advanceHomeworkUnits', { className: cls, items: advanceItems });
     }
     // Chỉ thêm phần "Tình hình học tập" khi thực sự có dữ liệu — báo cáo này gửi thẳng cho
     // học sinh/phụ huynh nên không ghi mấy dòng kiểu "(Không có ghi nhận nào...)" vào đó.
