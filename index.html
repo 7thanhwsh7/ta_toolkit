@@ -2264,7 +2264,11 @@ async function generateDayReport(){
       if (isMarkerUnit(currentReadingLabel)) advanceItems.push({ subject: READING_SUBJECT, unit: currentReadingLabel });
     }
     if (advanceItems.length){
-      apiPost('advanceHomeworkUnits', { className: cls, items: advanceItems });
+      // [SỬA] Sau khi gửi cập nhật, LÀM MỚI lại dữ liệu lộ trình trong bộ nhớ trình duyệt (chạy
+      // nền, không chặn giao diện). Nếu không làm mới, TA tạo báo cáo tiếp theo trong CÙNG phiên
+      // (không tải lại trang) sẽ vẫn thấy gợi ý Unit CŨ, dẫn tới gửi lặp lại đúng 1 giá trị cũ
+      // nhiều lần khiến "Unit tiếp theo" trên Sheet trông như không tiến thêm được gì.
+      apiPost('advanceHomeworkUnits', { className: cls, items: advanceItems }).then(() => { loadData(); });
     }
     // Chỉ thêm phần "Tình hình học tập" khi thực sự có dữ liệu — báo cáo này gửi thẳng cho
     // học sinh/phụ huynh nên không ghi mấy dòng kiểu "(Không có ghi nhận nào...)" vào đó.
