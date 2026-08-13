@@ -279,6 +279,15 @@
     .field{min-width:100%;}
     .field[style*="max-width"]{max-width:100% !important;}
     .field[style*="flex:0 0 auto"]{align-self:stretch !important;}
+    /* Các ô Unit trong Homework (dropdown lộ trình sách) đang dùng chiều rộng cố định (190px/
+       250px/110px) — trên desktop để nằm gọn cạnh ô Ghi chú, nhưng trên điện thoại cần giãn hết
+       chiều ngang như mọi field khác, không thì bị hẹp bất thường gây khoảng trống thừa. */
+    .field[style*="flex:0 0 190px"],
+    .field[style*="flex:0 0 250px"],
+    .field[style*="flex:0 0 110px"]{
+      flex:1 1 auto !important;
+      width:100% !important;
+    }
     select,input[type=text],input[type=date],input[type=number],input[type=month],textarea{font-size:16px;min-height:44px;}
     button{width:100%;min-height:44px;}
     .btn-sm{min-height:38px;}
@@ -600,7 +609,7 @@
   <!-- BƯỚC 7: TẠO HOMEWORK (BTVN) — TUỲ CHỌN -->
   <div class="card" data-step="7">
     <h2><span class="step-num">7</span>Tạo Homework (BTVN) — tuỳ chọn</h2>
-    <p class="hint">Không bắt buộc — TA nào muốn tự viết Homework riêng thì bỏ qua mục này. Nếu bật, phần Homework sẽ tự ghép chung vào báo cáo ở Bước 8 (Homework trước, Tình hình học tập sau) để copy 1 lần lên Classroom.</p>
+    <p class="hint">Không bắt buộc. Nếu bật, phần Homework sẽ tự ghép chung vào báo cáo ở Bước 8 để copy 1 lần qua Classroom.</p>
 
     <label class="checkbox-row" style="margin-bottom:14px;">
       <input type="checkbox" id="homeworkEnableCheck" onchange="toggleHomeworkSection()"> Tạo Homework cho báo cáo này
@@ -1293,19 +1302,22 @@ function isMarkerUnit(label){
 
 function renderHwUnitField(item){
   const subjectLabel = HW_SUBJECT_BY_ITEM_ID[item.id];
-  if (!subjectLabel){
+  const syl = subjectLabel ? getSyllabusPosition(subjectLabel) : null;
+
+  // [SỬA] Lớp/môn CHƯA có lộ trình theo dõi (hoặc mục này vốn không thuộc Reading/Listening/Vocab)
+  // -> chỉ hiện đúng 1 ô nhập tay đơn giản như trước giờ, KHÔNG hiện thừa dropdown chỉ có mỗi lựa
+  // chọn "Khác (tự nhập)..." gây rối mắt không cần thiết.
+  if (!subjectLabel || !syl){
     return `<div class="field" style="flex:0 0 ${item.unitLabel ? '190px' : '110px'};">
       <label>${esc(item.unitLabel || 'Unit')}</label>
       <input type="text" id="hw_unit_${item.id}" placeholder="${esc(item.unitPlaceholder || 'VD: 4')}">
     </div>`;
   }
 
-  const syl = getSyllabusPosition(subjectLabel);
-
   // [SỬA] Ngoặc vuông CHỈ áp dụng để skip BTVN cho Reading — Listening và Vocab dùng chung danh
   // sách sách của Reading nhưng KHÔNG bị ảnh hưởng, coi bước đó như 1 Unit bình thường (VD Vocab
   // vẫn học từ vựng của buổi gộp đó dù Reading không giao bài riêng ngày hôm đó).
-  if (syl && subjectLabel === 'Reading' && isMarkerUnit(syl.list[syl.currentIndex])){
+  if (subjectLabel === 'Reading' && isMarkerUnit(syl.list[syl.currentIndex])){
     // Bước hiện tại là buổi không giao BTVN theo lộ trình -> tự bỏ tick checkbox (mặc định không
     // đưa vào báo cáo), và chuyển ô Unit thành NHẬP TAY TỰ DO (không khoá cứng) — để nếu GV lỡ
     // giao thêm bài gì đó riêng cho buổi này, TA vẫn gõ được rồi tự tick vào để đưa vào báo cáo.
@@ -1319,21 +1331,19 @@ function renderHwUnitField(item){
   }
 
   const optionsHtml = [];
-  if (syl){
-    // Hiện TOÀN BỘ danh sách Unit của cuốn sách này, không chỉ vài Unit lân cận — TA bấm vào
-    // dropdown là thấy hết, tự do chọn bất kỳ Unit nào trong cuốn nếu cần, không giới hạn phạm vi.
-    syl.list.forEach((label, idx) => {
-      // Với Reading: loại hẳn các bước dạng [Unit X+Y] ra khỏi dropdown, vì bản chất không có
-      // BTVN cho những bước này (TA không nên chọn nhầm). Listening/Vocab vẫn giữ nguyên đầy đủ.
-      if (subjectLabel === 'Reading' && isMarkerUnit(label)) return;
-      const isCurrent = idx === syl.currentIndex;
-      // Hiển thị KHÔNG có ngoặc vuông (dễ đọc hơn cho TA), nhưng value vẫn giữ nguyên bản gốc có
-      // ngoặc (nếu có) để khi gửi lên backend vẫn khớp đúng với nhãn thật trong lộ trình sách.
-      const displayLabel = label.replace(/^\[|\]$/g, '');
-      optionsHtml.push(`<option value="${escAttr(label)}"${isCurrent ? ' selected' : ''}>${esc(displayLabel)}</option>`);
-    });
-  }
-  const bookLabel = syl ? `<div class="footnote" style="margin-top:4px;">Cuốn: ${esc(syl.bookName)}</div>` : '';
+  // Hiện TOÀN BỘ danh sách Unit của cuốn sách này, không chỉ vài Unit lân cận — TA bấm vào
+  // dropdown là thấy hết, tự do chọn bất kỳ Unit nào trong cuốn nếu cần, không giới hạn phạm vi.
+  syl.list.forEach((label, idx) => {
+    // Với Reading: loại hẳn các bước dạng [Unit X+Y] ra khỏi dropdown, vì bản chất không có
+    // BTVN cho những bước này (TA không nên chọn nhầm). Listening/Vocab vẫn giữ nguyên đầy đủ.
+    if (subjectLabel === 'Reading' && isMarkerUnit(label)) return;
+    const isCurrent = idx === syl.currentIndex;
+    // Hiển thị KHÔNG có ngoặc vuông (dễ đọc hơn cho TA), nhưng value vẫn giữ nguyên bản gốc có
+    // ngoặc (nếu có) để khi gửi lên backend vẫn khớp đúng với nhãn thật trong lộ trình sách.
+    const displayLabel = label.replace(/^\[|\]$/g, '');
+    optionsHtml.push(`<option value="${escAttr(label)}"${isCurrent ? ' selected' : ''}>${esc(displayLabel)}</option>`);
+  });
+  const bookLabel = `<div class="footnote" style="margin-top:4px;">Cuốn: ${esc(syl.bookName)}</div>`;
 
   return `<div class="field" style="flex:0 0 190px;">
     <label>Unit</label>
@@ -1341,7 +1351,7 @@ function renderHwUnitField(item){
       ${optionsHtml.join('')}
       <option value="">Khác (tự nhập)...</option>
     </select>
-    <input type="text" id="hw_unit_${item.id}_manual" placeholder="VD: Unit 4A" style="margin-top:6px;display:${syl ? 'none' : 'block'};">
+    <input type="text" id="hw_unit_${item.id}_manual" placeholder="${esc(item.unitPlaceholder || 'VD: 4')}" style="margin-top:6px;display:none;">
     ${bookLabel}
   </div>`;
 }
