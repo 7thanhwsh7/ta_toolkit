@@ -1307,11 +1307,7 @@ function renderHwUnitField(item){
     setTimeout(() => { const cb = document.getElementById('hw_cb_' + item.id); if (cb) cb.checked = false; }, 0);
     return `<div class="field" style="flex:0 0 250px;">
       <label>Unit</label>
-      <input type="text" id="hw_unit_${item.id}" placeholder="Để trống nếu không giao gì thêm">
-      <div class="footnote" style="margin-top:4px;line-height:1.5;">
-        Theo lộ trình, hôm nay không giao BTVN — buổi gộp/video: <b>${esc(syl.list[syl.currentIndex].replace(/^\[|\]$/g, ''))}</b>.
-        Nếu GV giao thêm bài riêng, gõ vào đây rồi tự tick mục này.
-      </div>
+      <input type="text" id="hw_unit_${item.id}">
     </div>`;
   }
 
@@ -1320,8 +1316,14 @@ function renderHwUnitField(item){
     // Hiện TOÀN BỘ danh sách Unit của cuốn sách này, không chỉ vài Unit lân cận — TA bấm vào
     // dropdown là thấy hết, tự do chọn bất kỳ Unit nào trong cuốn nếu cần, không giới hạn phạm vi.
     syl.list.forEach((label, idx) => {
+      // Với Reading: loại hẳn các bước dạng [Unit X+Y] ra khỏi dropdown, vì bản chất không có
+      // BTVN cho những bước này (TA không nên chọn nhầm). Listening/Vocab vẫn giữ nguyên đầy đủ.
+      if (subjectLabel === 'Reading' && isMarkerUnit(label)) return;
       const isCurrent = idx === syl.currentIndex;
-      optionsHtml.push(`<option value="${escAttr(label)}"${isCurrent ? ' selected' : ''}>${esc(label)}</option>`);
+      // Hiển thị KHÔNG có ngoặc vuông (dễ đọc hơn cho TA), nhưng value vẫn giữ nguyên bản gốc có
+      // ngoặc (nếu có) để khi gửi lên backend vẫn khớp đúng với nhãn thật trong lộ trình sách.
+      const displayLabel = label.replace(/^\[|\]$/g, '');
+      optionsHtml.push(`<option value="${escAttr(label)}"${isCurrent ? ' selected' : ''}>${esc(displayLabel)}</option>`);
     });
   }
   const bookLabel = syl ? `<div class="footnote" style="margin-top:4px;">Cuốn: ${esc(syl.bookName)}</div>` : '';
