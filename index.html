@@ -1252,7 +1252,7 @@ function withUnitPrefix(u){
 }
 
 function joinHwParts(base, note){
-  return note ? `${base} - ${note}` : base;
+  return note ? `${base} ${note}` : base;
 }
 
 let selectedHomeworkGroup = null;
@@ -1880,7 +1880,7 @@ function saveErrorLog(){
     return;
   }
   const errorCategory = errorText; // lưu lại tên lỗi gốc (chưa gắn chi tiết) để nhóm cho sạch
-  if (detail) errorText += ` - ${detail}`;
+  if (detail) errorText += ` ${detail}`;
 
   const needsFollowUp = document.getElementById('errorFollowUpCheck').checked;
   const date = document.getElementById('dateInput').value;
@@ -2102,7 +2102,7 @@ function buildReportLines(cls, date){
     scoreGroups.get(key).items.push(t);
   });
   scoreGroups.forEach(g => {
-    const prefix = `${g.testType}${g.unit ? ' - ' + g.unit : ''}${g.totalScore ? ' (' + g.totalScore + ')' : ''}`;
+    const prefix = `${g.testType}${g.unit ? ' ' + g.unit : ''}${g.totalScore ? ' (' + g.totalScore + ')' : ''}`;
 
     // Có điểm số cụ thể (VD 15, 7/10...) -> hiện riêng từng người theo "Tên điểm", KHÔNG gộp,
     // vì điểm số mỗi người thường khác nhau, gộp theo điểm dễ gây nhầm.
@@ -2286,7 +2286,8 @@ async function generateDayReport(){
       out += `TÌNH HÌNH HỌC TẬP NGÀY ${d}/${m}/${y} — LỚP ${cls}\n\n`;
       lines.forEach((line, i) => { out += `[${i + 1}] ${line}\n`; });
     }
-    out = out.trim();
+    // Classroom hiểu chuỗi " - " là bullet, nên chuẩn hoá toàn bộ nội dung report trước khi hiển thị/copy.
+    out = out.replace(/ - /g, ' ').trim();
 
     document.getElementById('dayReportOutput').value = out;
     toast('Đã lưu snapshot report gần nhất');
