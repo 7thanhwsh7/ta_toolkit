@@ -254,7 +254,10 @@
     margin-bottom:14px;
   }
   .score-mode-options{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
-  .score-mode-options .checkbox-row{padding:8px 10px;border:1px solid var(--line);border-radius:8px;color:var(--input-text);}
+  .score-mode-options .checkbox-row{padding:9px 12px;border:1px solid #D9BCC7;border-radius:10px;color:#2A2129;background:#FFFFFF;font-weight:600;font-size:13px;position:relative;}
+  .score-mode-options .checkbox-row input{accent-color:var(--gold-dim);}
+  .score-mode-new{border-color:var(--gold) !important;border-width:1.8px;background:linear-gradient(180deg,#FFF7FA 0%,#FFFFFF 100%) !important;box-shadow:0 2px 10px rgba(232,93,147,0.10);}
+  .score-new-badge{display:inline-flex;align-items:center;gap:5px;background:var(--gold);color:#FFFFFF;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;line-height:1;vertical-align:middle;margin-right:6px;}
   .score-batch-table{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--ink-3);}
   .score-batch-head,.score-batch-row{display:grid;grid-template-columns:minmax(120px,1fr) 82px minmax(130px,1.25fr);gap:8px;align-items:center;padding:8px 10px;}
   .score-batch-head{background:rgba(232,93,147,0.14);color:var(--gold);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;}
@@ -482,8 +485,8 @@
       <label class="checkbox-row">
         <input type="checkbox" id="scoreMultiModeCheck" onchange="toggleScoreMultiMode()"> Nhiều học sinh cùng 1 kết quả
       </label>
-      <label class="checkbox-row">
-        <input type="checkbox" id="scoreBatchModeCheck" onchange="toggleScoreBatchMode()"> Nhiều học sinh, điểm riêng từng bạn
+      <label class="checkbox-row score-mode-new">
+        <input type="checkbox" id="scoreBatchModeCheck" onchange="toggleScoreBatchMode()"> <span class="score-new-badge">✦ Mới</span>Nhiều học sinh, điểm riêng từng bạn
       </label>
     </div>
 
