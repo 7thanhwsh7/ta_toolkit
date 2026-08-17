@@ -253,6 +253,15 @@
   .score-setup-panel{
     margin-bottom:14px;
   }
+  .score-mode-options{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
+  .score-mode-options .checkbox-row{padding:8px 10px;border:1px solid var(--line);border-radius:8px;color:var(--input-text);}
+  .score-batch-table{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--ink-3);}
+  .score-batch-head,.score-batch-row{display:grid;grid-template-columns:minmax(120px,1fr) 82px minmax(130px,1.25fr);gap:8px;align-items:center;padding:8px 10px;}
+  .score-batch-head{background:rgba(232,93,147,0.14);color:var(--gold);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;}
+  .score-batch-row{border-top:1px solid var(--line);font-size:13px;}
+  .score-batch-student{font-weight:600;overflow-wrap:anywhere;}
+  .score-batch-row input{min-width:0;padding:8px 9px;font-size:14px;min-height:40px;}
+  .score-batch-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
   .mgmt-item:last-child{border-bottom:none;}
   .mgmt-item span{font-size:14px;}
   .mgmt-item button{padding:6px 12px;font-size:12px;min-height:auto;}
@@ -294,6 +303,10 @@
     .mgmt-item button{width:auto;min-height:32px;}
     .action-row{flex-direction:column;align-items:stretch;}
     .note-action{width:100%;justify-content:center;}
+    .score-batch-head,.score-batch-row{grid-template-columns:minmax(78px,1fr) 58px minmax(90px,1.15fr);gap:6px;padding:7px 8px;}
+    .score-batch-row{font-size:12.5px;}
+    .score-batch-row input{padding:7px 6px;font-size:13px;min-height:40px;}
+    .score-batch-actions button{width:100%;}
     .chip-row{gap:7px;}
     .chip{padding:9px 12px;font-size:12.5px;}
     .inline-add{flex-direction:column;}
@@ -465,9 +478,14 @@
         <input type="number" id="testTotalInput">
       </div>
     </div>
-    <label class="checkbox-row" style="margin-bottom:14px;">
-      <input type="checkbox" id="scoreMultiModeCheck" onchange="toggleScoreMultiMode()"> Nhiều học sinh cùng 1 kết quả
-    </label>
+    <div class="score-mode-options">
+      <label class="checkbox-row">
+        <input type="checkbox" id="scoreMultiModeCheck" onchange="toggleScoreMultiMode()"> Nhiều học sinh cùng 1 kết quả
+      </label>
+      <label class="checkbox-row">
+        <input type="checkbox" id="scoreBatchModeCheck" onchange="toggleScoreBatchMode()"> Nhiều học sinh, điểm riêng từng bạn
+      </label>
+    </div>
 
     <div class="score-setup-panel">
       <div class="row" id="scoreSingleStudentRow" style="margin-bottom:0;">
@@ -492,7 +510,27 @@
         </div>
       </div>
 
-      <div class="row" style="margin:14px 0 0;">
+      <div class="row" id="scoreBatchStudentRow" style="display:none;margin-bottom:0;">
+        <div class="field">
+          <label>✦ Chọn học sinh cần nhập điểm riêng</label>
+          <div style="display:flex;gap:8px;margin-bottom:8px;">
+            <button type="button" class="btn-ghost btn-sm" onclick="toggleAllScoreBatchStudents(true)">Chọn tất cả</button>
+            <button type="button" class="btn-ghost btn-sm" onclick="toggleAllScoreBatchStudents(false)">Bỏ chọn tất cả</button>
+            <button type="button" class="btn-gold btn-sm" onclick="buildScoreBatchTable()">Tạo bảng nhập điểm</button>
+          </div>
+          <div id="scoreBatchStudentList" class="session-log-frame" style="max-height:240px;overflow-y:auto;"></div>
+        </div>
+      </div>
+
+      <div id="scoreBatchEntryBox" style="display:none;margin-top:14px;">
+        <label style="display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--cream-dim);font-weight:600;margin-bottom:6px;">Nhập điểm và ghi chú từng học sinh</label>
+        <div id="scoreBatchTable"></div>
+        <div class="score-batch-actions">
+          <button type="button" class="btn-gold" onclick="saveScoreBatch()">Lưu tất cả điểm đã nhập</button>
+        </div>
+      </div>
+
+      <div class="row" id="scoreSharedFieldsRow" style="margin:14px 0 0;">
         <div class="field" id="scoreField">
           <label id="scoreFieldLabel">✦ Điểm</label>
           <input type="text" id="testScoreInput">
@@ -510,7 +548,7 @@
       </div>
     </div>
 
-    <div class="action-row">
+    <div class="action-row" id="scoreSharedActions">
       <label class="checkbox-row note-action">
         <input type="checkbox" id="testFollowUpCheck"> Note lại cho buổi tới
       </label>
@@ -947,6 +985,7 @@ function renderClassSelect(){
     renderSessionLog();
     if (document.getElementById('errorMultiModeCheck').checked) renderErrorMultiStudentList();
     if (document.getElementById('scoreMultiModeCheck').checked) renderScoreMultiStudentList();
+    if (document.getElementById('scoreBatchModeCheck').checked) renderScoreBatchStudentList();
     if (document.getElementById('attendanceMultiModeCheck').checked) renderAttendanceMultiStudentList();
   };
   refreshTomSelect('classSelect');
@@ -1463,12 +1502,32 @@ function buildHomeworkText(date){
 
 function toggleScoreMultiMode(){
   const isMulti = document.getElementById('scoreMultiModeCheck').checked;
-  document.getElementById('scoreSingleStudentRow').style.display = isMulti ? 'none' : 'flex';
+  const batchCheck = document.getElementById('scoreBatchModeCheck');
+  if (isMulti) batchCheck.checked = false;
+  updateScoreEntryMode();
+}
+
+function toggleScoreBatchMode(){
+  const isBatch = document.getElementById('scoreBatchModeCheck').checked;
+  const multiCheck = document.getElementById('scoreMultiModeCheck');
+  if (isBatch) multiCheck.checked = false;
+  updateScoreEntryMode();
+}
+
+function updateScoreEntryMode(){
+  const isMulti = document.getElementById('scoreMultiModeCheck').checked;
+  const isBatch = document.getElementById('scoreBatchModeCheck').checked;
+  document.getElementById('scoreSingleStudentRow').style.display = (isMulti || isBatch) ? 'none' : 'flex';
   document.getElementById('scoreMultiStudentRow').style.display = isMulti ? 'flex' : 'none';
+  document.getElementById('scoreBatchStudentRow').style.display = isBatch ? 'flex' : 'none';
+  document.getElementById('scoreSharedFieldsRow').style.display = isBatch ? 'none' : 'flex';
+  document.getElementById('scoreSharedActions').style.display = isBatch ? 'none' : 'flex';
+  if (!isBatch) document.getElementById('scoreBatchEntryBox').style.display = 'none';
   const label = document.getElementById('scoreFieldLabel');
   if (label) label.textContent = isMulti ? '✦ Điểm (chung cho cả nhóm)' : '✦ Điểm';
   if (isMulti) renderScoreMultiStudentList();
-  else refreshTomSelect('testStudentSelect'); // TomSelect cần tính lại layout sau khi được hiện lại
+  if (isBatch) renderScoreBatchStudentList();
+  if (!isMulti && !isBatch) refreshTomSelect('testStudentSelect');
 }
 
 function renderScoreMultiStudentList(){
@@ -1485,6 +1544,88 @@ function renderScoreMultiStudentList(){
 
 function toggleAllScoreMultiStudents(checked){
   document.querySelectorAll('.score-multi-student-cb').forEach(cb => cb.checked = checked);
+}
+
+function renderScoreBatchStudentList(){
+  const cls = currentClass();
+  const list = STATE.students.filter(s => s.className === cls);
+  const box = document.getElementById('scoreBatchStudentList');
+  document.getElementById('scoreBatchEntryBox').style.display = 'none';
+  if (!cls){ box.innerHTML = `<p class="empty-note">Chọn lớp ở Bước 1 trước đã.</p>`; return; }
+  if (!list.length){ box.innerHTML = `<p class="empty-note">Lớp này chưa có học sinh.</p>`; return; }
+  box.innerHTML = list.map((s, i) => `
+    <label class="checkbox-row" style="padding:6px 0;">
+      <input type="checkbox" class="score-batch-student-cb" value="${escAttr(s.name)}"> ${i + 1}. ${esc(s.name)}
+    </label>`).join('');
+}
+
+function toggleAllScoreBatchStudents(checked){
+  document.querySelectorAll('.score-batch-student-cb').forEach(cb => cb.checked = checked);
+}
+
+function buildScoreBatchTable(){
+  const selected = Array.from(document.querySelectorAll('.score-batch-student-cb:checked')).map(cb => cb.value);
+  if (!selected.length){ toast('Chọn ít nhất 1 học sinh', true); return; }
+  const table = document.getElementById('scoreBatchTable');
+  table.innerHTML = `<div class="score-batch-table">
+    <div class="score-batch-head"><span>Học sinh</span><span>Điểm</span><span>Ghi chú</span></div>
+    ${selected.map((name, i) => `<div class="score-batch-row" data-student="${esc(name)}">
+      <span class="score-batch-student">${esc(name)}</span>
+      <input class="score-batch-score" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="${i === selected.length - 1 ? 'done' : 'next'}" aria-label="Điểm của ${esc(name)}">
+      <input class="score-batch-note" type="text" autocomplete="off" aria-label="Ghi chú của ${esc(name)}">
+    </div>`).join('')}
+  </div>`;
+  document.getElementById('scoreBatchEntryBox').style.display = 'block';
+  const scoreInputs = Array.from(table.querySelectorAll('.score-batch-score'));
+  scoreInputs.forEach((input, index) => {
+    input.addEventListener('keydown', event => {
+      if (event.key !== 'Enter') return;
+      const nextInput = scoreInputs[index + 1];
+      if (!nextInput) return;
+      event.preventDefault();
+      nextInput.focus();
+    });
+  });
+  const firstScore = scoreInputs[0];
+  if (firstScore) firstScore.focus();
+}
+
+function saveScoreBatch(){
+  const cls = currentClass();
+  if (!cls){ toast('Chọn lớp ở Bước 1 trước đã', true); return; }
+  const cat = currentTestCat();
+  if (!cat){ toast('Chọn cột điểm trước đã', true); return; }
+  let testTypeName = cat.name;
+  if (cat.isOther){
+    testTypeName = document.getElementById('testCustomNameInput').value.trim();
+    if (!testTypeName){ toast('Nhập tên bài ở ô "Tên bài (tự nhập)"', true); return; }
+  }
+  const unit = document.getElementById('testUnitInput').value.trim();
+  if (!unit){ toast('Nhập Unit / tên bài', true); return; }
+  const date = document.getElementById('dateInput').value;
+  const total = document.getElementById('testTotalInput').value;
+  const rows = Array.from(document.querySelectorAll('#scoreBatchTable .score-batch-row'))
+    .map(row => ({
+      studentName: row.dataset.student,
+      score: row.querySelector('.score-batch-score').value.trim(),
+      note: row.querySelector('.score-batch-note').value.trim()
+    }))
+    .filter(row => row.score || row.note);
+  if (!rows.length){ toast('Nhập ít nhất 1 điểm hoặc ghi chú', true); return; }
+  rows.forEach(row => {
+    const scorePart = row.score ? row.score + (total ? '/' + total : '') : '';
+    const labelParts = [scorePart, row.note].filter(Boolean).join(' - ');
+    queuePending('testScores', {
+      date, className: cls, studentName: row.studentName,
+      testType: testTypeName, kind: 'score', unit,
+      score: row.score, totalScore: total, note: row.note
+    }, `${row.studentName} — ${testTypeName} ${unit}: ${labelParts}`, testTypeName);
+  });
+  savePendingToLocalStorage();
+  document.querySelectorAll('.score-batch-student-cb').forEach(cb => cb.checked = false);
+  document.getElementById('scoreBatchEntryBox').style.display = 'none';
+  document.getElementById('scoreBatchTable').innerHTML = '';
+  toast(`Đã ghi nhận ${rows.length} học sinh`);
 }
 
 /* ============== CẦN THEO DÕI (lọc theo lớp) ============== */
