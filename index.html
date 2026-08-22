@@ -801,11 +801,11 @@ function sleep(ms){ return new Promise(resolve => setTimeout(resolve, ms)); }
 // Apps Script Web App thỉnh thoảng bị lỗi mạng/redirect thoáng qua (WiFi/4G chập chờn, Google
 // xử lý chậm bước redirect nội bộ...) khiến fetch() ném exception dù server không hề có vấn đề gì.
 // Tự động thử lại vài lần trước khi báo lỗi đỏ cho TA, để mấy lần chập chờn ngắn tự vượt qua được.
-async function fetchWithRetry(url, maxRetries=2){
+async function fetchWithRetry(url, options, maxRetries=2){
   let lastErr;
   for (let attempt = 0; attempt <= maxRetries; attempt++){
     try {
-      return await fetch(url);
+      return await fetch(url, options);
     } catch (err){
       lastErr = err;
       if (attempt < maxRetries) await sleep(500 * (attempt + 1)); // chờ tăng dần: 500ms, 1000ms...
@@ -855,14 +855,24 @@ async function apiPost(action, payload){
     activeBtn.textContent = 'Đang xử lý...';
   }
 
-  // Gửi qua GET (giống apiGet) thay vì fetch POST: Apps Script Web App hay bị CORS chặn khi
-  // fetch POST cross-origin bị redirect nội bộ tới script.googleusercontent.com. GET không bị
-  // vấn đề này. Payload được đóng gói thành JSON rồi encode vào query string.
-  const query = 'action=' + encodeURIComponent(action) + '&payload=' + encodeURIComponent(JSON.stringify(payload || {}));
-  const fullUrl = CONFIG.API_URL + (CONFIG.API_URL.indexOf('?') === -1 ? '?' : '&') + query;
+  // [SỬA] Quay lại dùng POST thật (không còn nhét payload vào query string GET nữa), vì GET có
+  // giới hạn độ dài URL (đặc biệt thấp trên trình duyệt di động) — lớp nào có nhiều mục nhập
+  // cùng lúc (VD ~50 mục điểm+lỗi+điểm danh) dễ vượt giới hạn đó, khiến request thất bại âm thầm
+  // dù dữ liệu đã nhập đủ trên client.
+  //
+  // Dùng Content-Type: 'text/plain' (KHÔNG phải 'application/json') là điểm mấu chốt: nó giữ
+  // request ở dạng "simple request" nên trình duyệt KHÔNG gửi preflight OPTIONS trước — và đây
+  // chính xác là bước từng gây lỗi CORS/redirect trước đây (Apps Script Web App không tự xử lý
+  // OPTIONS). doPost(e) ở Code.gs đọc payload qua e.postData.contents rồi JSON.parse — không quan
+  // tâm Content-Type là gì, nên phía server không cần sửa gì cả.
+  const body = JSON.stringify({ action, payload: payload || {} });
 
   try {
-    const res = await fetchWithRetry(fullUrl);
+    const res = await fetchWithRetry(CONFIG.API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: body
+    });
     const text = await res.text();
     const contentType = (res.headers.get('content-type') || '').toLowerCase();
     const trimmed = text.trimStart();
