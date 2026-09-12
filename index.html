@@ -516,6 +516,7 @@
       <div class="row" id="scoreBatchStudentRow" style="display:none;margin-bottom:0;">
         <div class="field">
           <label>✦ Chọn học sinh cần nhập điểm riêng</label>
+          <input type="text" id="scoreBatchStudentSearch" placeholder="🔍 Tìm tên học sinh..." oninput="filterScoreBatchStudentList(this.value)" style="margin-bottom:8px;">
           <div style="display:flex;gap:8px;margin-bottom:8px;">
             <button type="button" class="btn-ghost btn-sm" onclick="toggleAllScoreBatchStudents(true)">Chọn tất cả</button>
             <button type="button" class="btn-ghost btn-sm" onclick="toggleAllScoreBatchStudents(false)">Bỏ chọn tất cả</button>
@@ -1563,17 +1564,34 @@ function renderScoreBatchStudentList(){
   const cls = currentClass();
   const list = STATE.students.filter(s => s.className === cls);
   const box = document.getElementById('scoreBatchStudentList');
+  const searchInput = document.getElementById('scoreBatchStudentSearch');
+  if (searchInput) searchInput.value = ''; // đổi lớp / render lại thì xoá bộ lọc cũ, tránh nhầm lẫn
   document.getElementById('scoreBatchEntryBox').style.display = 'none';
   if (!cls){ box.innerHTML = `<p class="empty-note">Chọn lớp ở Bước 1 trước đã.</p>`; return; }
   if (!list.length){ box.innerHTML = `<p class="empty-note">Lớp này chưa có học sinh.</p>`; return; }
   box.innerHTML = list.map((s, i) => `
-    <label class="checkbox-row" style="padding:6px 0;">
+    <label class="checkbox-row score-batch-student-row" style="padding:6px 0;">
       <input type="checkbox" class="score-batch-student-cb" value="${escAttr(s.name)}"> ${i + 1}. ${esc(s.name)}
     </label>`).join('');
 }
 
 function toggleAllScoreBatchStudents(checked){
-  document.querySelectorAll('.score-batch-student-cb').forEach(cb => cb.checked = checked);
+  // Chỉ tick/bỏ tick những dòng đang hiển thị (sau khi lọc tìm kiếm) — tránh chọn nhầm
+  // học sinh đang bị ẩn mà TA không nhìn thấy.
+  document.querySelectorAll('.score-batch-student-row').forEach(row => {
+    if (row.style.display === 'none') return;
+    const cb = row.querySelector('.score-batch-student-cb');
+    if (cb) cb.checked = checked;
+  });
+}
+
+// Lọc danh sách học sinh theo tên gõ vào ô tìm kiếm — không cần kéo dài danh sách để tìm nữa.
+function filterScoreBatchStudentList(keyword){
+  const kw = keyword.trim().toLowerCase();
+  document.querySelectorAll('.score-batch-student-row').forEach(row => {
+    const name = (row.querySelector('.score-batch-student-cb')?.value || '').toLowerCase();
+    row.style.display = (!kw || name.includes(kw)) ? 'flex' : 'none';
+  });
 }
 
 function buildScoreBatchTable(){
