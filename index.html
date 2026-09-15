@@ -2295,7 +2295,7 @@ function buildReportLines(cls, date){
     });
     const noteParts = Array.from(noteGroups.entries()).map(([reason, names]) => `${reason}: ${names.join(', ')}`);
     const parts = [...scoreParts, ...noteParts];
-    lines.push(`${prefix} ${parts.join('; ')}`);
+    lines.push(`${prefix}: ${parts.join('; ')}`);
   });
 
   // Nhóm nộp bài / kiểm tra theo loại cột
