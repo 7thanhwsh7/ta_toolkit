@@ -496,7 +496,7 @@
       </div>
       <div class="field" id="unitField">
         <label>Unit / tên bài *</label>
-        <input type="text" id="testUnitInput">
+        <input type="text" id="testUnitInput" placeholder="VD: UNIT 2/STATIVE VERBS">
       </div>
       <div class="field" id="totalField">
         <label>Điểm tổng của bài (không bắt buộc)</label>
@@ -730,7 +730,6 @@
 
     <div class="card">
       <h2>📚 Chương trình học — để báo in sách</h2>
-      <p class="hint">Danh sách đầu sách theo từng môn, để TA đối chiếu khi báo in sách. Không dùng để nhập liệu hằng ngày.</p>
     </div>
 
     <div class="card">
@@ -765,14 +764,14 @@
     </div>
 
     <div class="card">
-      <h2 style="font-style:normal;">Listening — theo lớp</h2>
-      <p class="hint">Lấy đúng theo đầu sách TA/GV đã khai ở tab "Đầu sách BTVN" — sửa ở đó thì mục này tự cập nhật theo, không cần sửa ở đây.</p>
+      <h2 style="font-style:normal;">Listening</h2>
+      <p class="hint">Đúng theo thứ tự đã khai ở tab "Đầu sách BTVN" — sửa ở đó thì danh sách này tự cập nhật theo, không cần sửa ở đây.</p>
       <div id="curriculumListeningList"></div>
     </div>
 
     <div class="card">
-      <h2 style="font-style:normal;">Reading — theo lớp</h2>
-      <p class="hint">Lấy đúng theo đầu sách TA/GV đã khai ở tab "Đầu sách BTVN" — sửa ở đó thì mục này tự cập nhật theo, không cần sửa ở đây.</p>
+      <h2 style="font-style:normal;">Reading</h2>
+      <p class="hint">Đúng theo thứ tự đã khai ở tab "Đầu sách BTVN" — sửa ở đó thì danh sách này tự cập nhật theo, không cần sửa ở đây.</p>
       <div id="curriculumReadingList"></div>
     </div>
 
@@ -1449,8 +1448,8 @@ function renderHwUnitField(item){
   // chọn "Khác (tự nhập)..." gây rối mắt không cần thiết.
   if (!subjectLabel || !syl){
     return `<div class="field" style="flex:0 0 ${item.unitLabel ? '190px' : '150px'};">
-      <label>${esc(item.unitLabel || 'Unit (tự thêm chữ "Unit")')}</label>
-      <input type="text" id="hw_unit_${item.id}" placeholder="${esc(item.unitPlaceholder || 'VD: 4')}">
+      <label>${esc(item.unitLabel || 'Unit')}</label>
+      <input type="text" id="hw_unit_${item.id}" placeholder="${esc(item.unitPlaceholder || 'VD: UNIT 4')}">
     </div>`;
   }
 
@@ -1465,8 +1464,8 @@ function renderHwUnitField(item){
     // cáo (xem phần tự động ở generateDayReport), không phụ thuộc vào việc TA có tick mục này.
     setTimeout(() => { const cb = document.getElementById('hw_cb_' + item.id); if (cb) cb.checked = false; }, 0);
     return `<div class="field" style="flex:0 0 250px;">
-      <label>Unit (tự thêm chữ "Unit")</label>
-      <input type="text" id="hw_unit_${item.id}">
+      <label>Unit</label>
+      <input type="text" id="hw_unit_${item.id}" placeholder="VD: UNIT 4">
     </div>`;
   }
 
@@ -1491,7 +1490,7 @@ function renderHwUnitField(item){
       ${optionsHtml.join('')}
       <option value="">Khác (tự nhập)...</option>
     </select>
-    <input type="text" id="hw_unit_${item.id}_manual" placeholder="${esc(item.unitPlaceholder || 'VD: 4 (tự thêm chữ Unit)')}" style="margin-top:6px;display:none;">
+    <input type="text" id="hw_unit_${item.id}_manual" placeholder="${esc(item.unitPlaceholder || 'VD: UNIT 4')}" style="margin-top:6px;display:none;">
     ${bookLabel}
   </div>`;
 }
@@ -2655,9 +2654,9 @@ function showScreen(name){
 }
 
 // [MỚI] Màn "Chương trình học — để báo in sách": Grammar/Speaking là danh sách cố định (đầu sách
-// GV đặt tên sẵn theo chương trình chung), riêng Listening/Reading LẤY THẲNG từ dữ liệu "Đầu sách
-// BTVN" đã có trong STATE.homeworkProgress (không hard-code), để sửa 1 chỗ là khớp theo, tránh
-// lệch giữa 2 nơi.
+// GV đặt tên sẵn theo chương trình chung), riêng Listening/Reading LẤY THẲNG từ STATE.bookOrder
+// (đúng thứ tự cột Nghe/Đọc trên sheet "Đầu sách BTVN", không hard-code) — hiện ĐỦ danh sách sách
+// theo đúng thứ tự học trước/sau, không lọc theo lớp nào đang dùng hay chưa.
 function renderCurriculumView(){
   renderCurriculumBookList('Listening', 'curriculumListeningList');
   renderCurriculumBookList('Reading', 'curriculumReadingList');
@@ -2665,16 +2664,9 @@ function renderCurriculumView(){
 
 function renderCurriculumBookList(subjectLabel, containerId){
   const box = document.getElementById(containerId);
-  const rows = STATE.homeworkProgress
-    .filter(p => p.subject === subjectLabel && p.bookName)
-    .slice()
-    .sort((a, b) => a.className.localeCompare(b.className, 'vi'));
-  if (!rows.length){ box.innerHTML = `<p class="empty-note">Chưa có lớp nào khai đầu sách ${esc(subjectLabel)} ở tab "Đầu sách BTVN".</p>`; return; }
-  box.innerHTML = rows.map(r => `
-    <div class="curriculum-book-row">
-      <span class="cls">${esc(r.className)}</span>
-      <span class="book">${esc(r.bookName)}</span>
-    </div>`).join('');
+  const books = STATE.bookOrder[subjectLabel] || [];
+  if (!books.length){ box.innerHTML = `<p class="empty-note">Chưa có dữ liệu đầu sách ${esc(subjectLabel)} ở tab "Đầu sách BTVN".</p>`; return; }
+  box.innerHTML = `<ul class="curriculum-list">${books.map(name => `<li>${esc(name)}</li>`).join('')}</ul>`;
 }
 function renderManagementView(){
   renderMgmtClassSelect();
