@@ -97,6 +97,11 @@
   select:focus,input:focus,textarea:focus{border-color:var(--gold-dim);}
   textarea{resize:vertical;min-height:110px;font-family:'Be Vietnam Pro',sans-serif;font-size:14px;line-height:1.6;}
 
+  /* Ô đọc báo cáo sau khi tạo — trước đây dùng min-height chung 110px nên trên điện thoại phải
+     cuộn bên trong ô rất nhỏ mới đọc hết, dễ bị lẫn/lỡ dòng. Cho cao sẵn hẳn lên + cỡ chữ lớn hơn
+     xíu để đọc thoải mái ngay khi vừa tạo xong, không cần kéo dãn tay mới xem được toàn bộ nội dung. */
+  #dayReportOutput{min-height:320px;font-size:15px;}
+
   /* Chrome/Safari tự autofill ép nền trắng — ép lại nền tối + chữ sáng để không bị trắng-trên-trắng */
   input:-webkit-autofill,
   input:-webkit-autofill:hover,
@@ -1361,8 +1366,8 @@ function renderHwUnitField(item){
   // -> chỉ hiện đúng 1 ô nhập tay đơn giản như trước giờ, KHÔNG hiện thừa dropdown chỉ có mỗi lựa
   // chọn "Khác (tự nhập)..." gây rối mắt không cần thiết.
   if (!subjectLabel || !syl){
-    return `<div class="field" style="flex:0 0 ${item.unitLabel ? '190px' : '110px'};">
-      <label>${esc(item.unitLabel || 'Unit')}</label>
+    return `<div class="field" style="flex:0 0 ${item.unitLabel ? '190px' : '150px'};">
+      <label>${esc(item.unitLabel || 'Unit (tự thêm chữ "Unit")')}</label>
       <input type="text" id="hw_unit_${item.id}" placeholder="${esc(item.unitPlaceholder || 'VD: 4')}">
     </div>`;
   }
@@ -1378,7 +1383,7 @@ function renderHwUnitField(item){
     // cáo (xem phần tự động ở generateDayReport), không phụ thuộc vào việc TA có tick mục này.
     setTimeout(() => { const cb = document.getElementById('hw_cb_' + item.id); if (cb) cb.checked = false; }, 0);
     return `<div class="field" style="flex:0 0 250px;">
-      <label>Unit</label>
+      <label>Unit (tự thêm chữ "Unit")</label>
       <input type="text" id="hw_unit_${item.id}">
     </div>`;
   }
@@ -1404,7 +1409,7 @@ function renderHwUnitField(item){
       ${optionsHtml.join('')}
       <option value="">Khác (tự nhập)...</option>
     </select>
-    <input type="text" id="hw_unit_${item.id}_manual" placeholder="${esc(item.unitPlaceholder || 'VD: 4')}" style="margin-top:6px;display:none;">
+    <input type="text" id="hw_unit_${item.id}_manual" placeholder="${esc(item.unitPlaceholder || 'VD: 4 (tự thêm chữ Unit)')}" style="margin-top:6px;display:none;">
     ${bookLabel}
   </div>`;
 }
@@ -2461,7 +2466,12 @@ async function generateDayReport(){
     // Classroom hiểu chuỗi " - " là bullet, nên chuẩn hoá toàn bộ nội dung report trước khi hiển thị/copy.
     out = out.replace(/ - /g, ' ').trim();
 
-    document.getElementById('dayReportOutput').value = out;
+    const reportBox = document.getElementById('dayReportOutput');
+    reportBox.value = out;
+    // Tự giãn chiều cao ô theo đúng nội dung report (không giới hạn ở min-height CSS) — để trên
+    // điện thoại đọc được toàn bộ 1 lần, không phải cuộn lồng bên trong 1 ô nhỏ.
+    reportBox.style.height = 'auto';
+    reportBox.style.height = reportBox.scrollHeight + 'px';
     toast('Đã lưu snapshot report gần nhất');
   });
 }
