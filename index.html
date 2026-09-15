@@ -242,6 +242,22 @@
 
   .mgmt-item{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);}
 
+  .curriculum-list{list-style:none;margin:0;padding:0;}
+  .curriculum-list li{padding:9px 0;border-bottom:1px solid var(--line);font-size:14px;}
+  .curriculum-list li:last-child{border-bottom:none;}
+  .curriculum-list .footnote{display:block;margin-top:2px;}
+  .curriculum-book-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px;}
+  .curriculum-book-row:last-child{border-bottom:none;}
+  .curriculum-book-row .cls{font-weight:600;}
+  .curriculum-book-row .book{color:var(--cream-dim);text-align:right;}
+
+  /* Banner nhắc báo in sách — cố tình tương phản mạnh (vàng/đỏ) để TA không lướt qua, khác hẳn
+     màu hồng/be trung tính của giao diện còn lại. */
+  .reminder-banner{
+    background:#FFC93C;color:#3D2A00;border:1px solid #E2685C;border-radius:10px;
+    padding:12px 14px;font-size:13.5px;font-weight:600;line-height:1.5;margin-top:12px;
+  }
+
   .session-log-frame{
     background:var(--ink-3);border:1px solid var(--line);border-radius:10px;
     padding:6px 16px;
@@ -348,6 +364,7 @@
       <p class="hint" style="margin:0 0 24px;">TA muốn làm gì hôm nay?</p>
       <div style="display:flex;flex-direction:column;gap:14px;max-width:360px;margin:0 auto;">
         <button class="btn-gold" style="padding:16px;font-size:16px;" onclick="showScreen('classSelect')">Nhập liệu</button>
+        <button class="btn-ghost" style="padding:16px;font-size:16px;" onclick="showScreen('curriculum')">📚 Chương trình học (để báo in sách)</button>
         <button class="btn-ghost" style="padding:16px;font-size:16px;" onclick="showScreen('manage')">⚙️ Quản lý lớp & học sinh</button>
       </div>
     </div>
@@ -706,6 +723,62 @@
   </div>
 
   <!-- MÀN QUẢN LÝ LỚP & HỌC SINH -->
+  <!-- MÀN CHƯƠNG TRÌNH HỌC (ĐỂ BÁO IN SÁCH) -->
+  <div id="screen-curriculum" style="display:none;">
+
+  <button class="btn-ghost btn-sm" style="margin-bottom:14px;" onclick="showScreen('welcome')">← Quay lại</button>
+
+    <div class="card">
+      <h2>📚 Chương trình học — để báo in sách</h2>
+      <p class="hint">Danh sách đầu sách theo từng môn, để TA đối chiếu khi báo in sách. Không dùng để nhập liệu hằng ngày.</p>
+    </div>
+
+    <div class="card">
+      <h2 style="font-style:normal;">Grammar</h2>
+      <ul class="curriculum-list">
+        <li>Grammar <span class="footnote">(áp dụng cho lớp khai giảng từ tháng 8/2026)</span></li>
+        <li>Grammar 2</li>
+        <li>Grammar 3A</li>
+        <li>Grammar 3B</li>
+        <li>Grammar 4A</li>
+        <li>Grammar 4B</li>
+        <li>Grammar 5A</li>
+        <li>Grammar 5B</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2 style="font-style:normal;">Speaking</h2>
+      <ul class="curriculum-list">
+        <li>Kid's Box 3</li>
+        <li>Kid's Box 4</li>
+        <li>Kid's Box 5</li>
+        <li>Dictation — <b>chỉ dành cho lớp GE, E4K không học</b></li>
+        <li>Speak Now 2</li>
+        <li>Speak Now 3</li>
+        <li>Speak Now 4</li>
+        <li>Time to talk B1</li>
+        <li>Time to talk B2</li>
+        <li>Impact Issues 2</li>
+        <li>Impact Issues 3</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2 style="font-style:normal;">Listening — theo lớp</h2>
+      <p class="hint">Lấy đúng theo đầu sách TA/GV đã khai ở tab "Đầu sách BTVN" — sửa ở đó thì mục này tự cập nhật theo, không cần sửa ở đây.</p>
+      <div id="curriculumListeningList"></div>
+    </div>
+
+    <div class="card">
+      <h2 style="font-style:normal;">Reading — theo lớp</h2>
+      <p class="hint">Lấy đúng theo đầu sách TA/GV đã khai ở tab "Đầu sách BTVN" — sửa ở đó thì mục này tự cập nhật theo, không cần sửa ở đây.</p>
+      <div id="curriculumReadingList"></div>
+    </div>
+
+  </div>
+
+  <!-- MÀN QUẢN LÝ LỚP & HỌC SINH -->
   <div id="screen-manage" style="display:none;">
 
   <button class="btn-ghost btn-sm" style="margin-bottom:14px;" onclick="showScreen('welcome')">← Quay lại</button>
@@ -772,6 +845,7 @@ let STATE = {
   classProgress: [],
   homeworkProgress: [],
   syllabusBooks: {},
+  bookOrder: {}, // { Reading: [tên sách theo đúng thứ tự cột trái->phải], Listening: [...] } — dùng để tự suy ra "sách tiếp theo"
   sessionLog: [],
   pendingBatch: { testScores: [], errors: [], attendance: [] },   // ghi tạm, chưa gửi Sheet
   submittedToday: { testScores: [], errors: [], attendance: [] }  // đã gửi Sheet trong phiên này
@@ -950,6 +1024,7 @@ async function loadData(){
   STATE.classProgress = data.classProgress || [];
   STATE.homeworkProgress = data.homeworkProgress || [];
   STATE.syllabusBooks = data.syllabusBooks || {};
+  STATE.bookOrder = data.bookOrder || {};
 
   try {
     renderAll();
@@ -1336,8 +1411,12 @@ function selectHomeworkGroup(group){
 // từ hôm sau nó tự tiếp tục đúng từ điểm đã sửa, không tự nhảy lại theo Reading nữa).
 const HW_SUBJECT_BY_ITEM_ID = { reading: 'Reading', listening: 'Listening', vocab: 'Vocab' };
 
-// Trả về { bookName, list, currentIndex } nếu lớp+môn này đã được GV khai báo sẵn lộ trình VÀ
-// sách đó có danh sách Unit định nghĩa trong input_ĐẦU SÁCH BTVN — ngược lại trả về null (TA gõ tay).
+// Trả về { bookName, list, currentIndex, nextBookName } nếu lớp+môn này đã được GV khai báo sẵn
+// lộ trình VÀ sách đó có danh sách Unit định nghĩa trong input_ĐẦU SÁCH BTVN — ngược lại trả về
+// null (TA gõ tay). nextBookName tự suy ra từ STATE.bookOrder[subjectLabel] — đúng thứ tự cột
+// Nghe/Đọc trên sheet gốc (VD Đọc: Subject Link 3 → Subject Link 4 → ... → Explorer Foundation →
+// Explorer 1) — sách đứng ngay sau sách hiện tại trong danh sách đó chính là sách tiếp theo, không
+// cần khai tay riêng cho từng lớp.
 function getSyllabusPosition(subjectLabel){
   const cls = document.getElementById('classSelect').value;
   if (!cls || cls === '__new__') return null;
@@ -1347,7 +1426,10 @@ function getSyllabusPosition(subjectLabel){
   if (!list || !list.length) return null;
   let idx = list.indexOf(row.nextUnit);
   if (idx === -1) idx = 0; // chưa có tiến độ ghi nhận, hoặc không khớp -> bắt đầu từ đầu sách
-  return { bookName: row.bookName, list, currentIndex: idx };
+  const order = STATE.bookOrder[subjectLabel] || [];
+  const bookIdx = order.indexOf(row.bookName);
+  const nextBookName = (bookIdx !== -1 && bookIdx < order.length - 1) ? order[bookIdx + 1] : '';
+  return { bookName: row.bookName, list, currentIndex: idx, nextBookName };
 }
 
 // [MỚI] Đánh dấu 1 bước trong lộ trình là "không giao BTVN hôm đó" bằng cách gõ trong ngoặc vuông
@@ -1433,6 +1515,66 @@ function getEffectiveHwUnit(itemId){
   return el.value.trim();
 }
 
+// [MỚI] Nhắc TA chuẩn bị báo in sách khi lớp SẮP HỌC HẾT cuốn Reading/Listening đang dùng — áp
+// dụng chung cho MỌI lớp có theo dõi lộ trình (không phân biệt GE/E4K, vì tool không tự biết loại
+// lớp — sách nào hết thì nhắc, không cần biết lớp gì). Lớp nào KHÔNG bật theo dõi lộ trình (không
+// dùng tính năng gợi ý Unit tự động) thì getSyllabusPosition trả null -> không có data -> không nhắc,
+// đúng như yêu cầu. Tên sách tiếp theo tự suy ra từ STATE.bookOrder (đúng thứ tự cột Nghe/Đọc trên
+// sheet gốc) — không cần khai tay riêng từng lớp; nếu sách hiện tại không nằm trong bookOrder hoặc
+// đã là sách cuối cùng của môn đó thì chỉ nhắc chung chung, không bịa tên sách.
+const PRINT_ORDER_REMAINING_THRESHOLD = 4; // còn <= 4 bài (tính cả bài hôm nay) thì bắt đầu nhắc
+
+function getPrintOrderReminderHtml(itemId){
+  const subjectLabel = HW_SUBJECT_BY_ITEM_ID[itemId];
+  if (subjectLabel !== 'Reading' && subjectLabel !== 'Listening') return '';
+  const cls = document.getElementById('classSelect').value;
+  if (!cls) return '';
+  const syl = getSyllabusPosition(subjectLabel);
+  if (!syl) return '';
+  const remaining = syl.list.length - syl.currentIndex;
+  if (remaining > PRINT_ORDER_REMAINING_THRESHOLD) return '';
+  const nextBookHtml = syl.nextBookName
+    ? ` Chuẩn bị báo in sách tiếp theo: <b>${esc(syl.nextBookName)}</b>.`
+    : '';
+  return `<div class="reminder-banner">⚠️ Lớp <b>${esc(cls)}</b> sắp học hết sách <b>${esc(syl.bookName)}</b> (${esc(subjectLabel)}) — còn ${remaining} bài.${nextBookHtml}</div>`;
+}
+
+// [MỚI] Nhắc riêng cho SPEAKING — KHÔNG dùng chung cơ chế Reading/Listening ở trên, vì Speaking
+// không có lộ trình theo dõi Unit như 2 môn kia. Chỉ áp dụng đúng 1 trường hợp: lớp GE đang học
+// Reading bằng cuốn EXPLORER FOUNDATION (là sách dùng cho môn Dictation — riêng của lớp GE, E4K
+// không học) — khi Reading sắp hết cuốn này thì tranh thủ nhắc luôn TA chuẩn bị báo in sách
+// SPEAKING tiếp theo (Speak Now 2), vì 2 mốc này đi cùng nhau theo lộ trình của G.EDU. Thứ tự sách
+// Speaking cố định theo catalog chung (không phải sách tự khai theo lớp như Reading/Listening),
+// nên hard-code thẳng thứ tự ở đây, không cần lấy từ STATE.bookOrder.
+const SPEAKING_BOOK_ORDER = [
+  "Kid's Box 3", "Kid's Box 4", "Kid's Box 5", 'Dictation',
+  'Speak Now 2', 'Speak Now 3', 'Speak Now 4',
+  'Time to talk B1', 'Time to talk B2', 'Impact Issues 2', 'Impact Issues 3'
+];
+
+// Nhận diện lớp GE (không phải E4K) — tool chưa có cột riêng lưu loại lớp, tạm dựa vào tên lớp:
+// lớp E4K luôn có chữ "E4K" trong tên, còn lại hễ tên có chữ "GE" thì coi là GE. Chỉ dùng cho
+// đúng 1 việc: nhắc in sách Speaking ở dưới — KHÔNG liên quan gì đến nhắc in Reading/Listening.
+function isGeClass(className){
+  const name = String(className || '').toUpperCase();
+  if (name.includes('E4K')) return false;
+  return name.includes('GE');
+}
+
+function getSpeakingPrintReminderHtml(itemId){
+  if (HW_SUBJECT_BY_ITEM_ID[itemId] !== 'Reading') return ''; // chỉ gắn theo mục Reading, vì đó là nơi theo dõi Explorer Foundation
+  const cls = document.getElementById('classSelect').value;
+  if (!cls || !isGeClass(cls)) return '';
+  const syl = getSyllabusPosition('Reading');
+  if (!syl || String(syl.bookName || '').trim().toUpperCase() !== 'EXPLORER FOUNDATION') return '';
+  const remaining = syl.list.length - syl.currentIndex;
+  if (remaining > PRINT_ORDER_REMAINING_THRESHOLD) return '';
+  const dictationIdx = SPEAKING_BOOK_ORDER.indexOf('Dictation');
+  const nextSpeakingBook = (dictationIdx !== -1 && dictationIdx < SPEAKING_BOOK_ORDER.length - 1) ? SPEAKING_BOOK_ORDER[dictationIdx + 1] : '';
+  const nextBookHtml = nextSpeakingBook ? ` Chuẩn bị báo in sách Speaking tiếp theo: <b>${esc(nextSpeakingBook)}</b>.` : '';
+  return `<div class="reminder-banner">⚠️ Lớp <b>${esc(cls)}</b> (GE) sắp học xong <b>Dictation</b> (Explorer Foundation) — còn ${remaining} bài.${nextBookHtml}</div>`;
+}
+
 function renderHomeworkItems(){
   const box = document.getElementById('homeworkItemsBox');
   if (!selectedHomeworkGroup){ box.innerHTML = ''; return; }
@@ -1451,6 +1593,8 @@ function renderHomeworkItems(){
           <input type="text" id="hw_note_${item.id}">
         </div>
       </div>
+      ${getPrintOrderReminderHtml(item.id)}
+      ${getSpeakingPrintReminderHtml(item.id)}
     </div>
   `).join('');
 
@@ -2444,11 +2588,19 @@ async function generateDayReport(){
     // [SỬA] Ngoặc vuông CHỈ áp dụng skip/tự chuyển tiếp cho Reading — Listening và Vocab không bị
     // ảnh hưởng, vẫn coi bước đó là Unit bình thường (dựa vào TA có tick/chọn hay không như mọi
     // bước khác, không có cơ chế "tự bỏ qua" riêng cho 2 môn này).
+    // [SỬA] Trước đây đoạn này chạy VÔ ĐIỀU KIỆN trên mọi báo cáo của lớp, kể cả báo cáo thuộc
+    // nhóm không hề có mục Reading (VD "Buổi học Ngữ pháp") — nên lỡ tạo báo cáo buổi khác trong
+    // lúc Reading đang dừng ở bước [...] là bị tự nhảy qua sớm, chạy trước cả buổi gộp thật ngoài
+    // đời, gây lệch tiến độ. Giờ CHỈ tự chuyển tiếp khi báo cáo hôm nay thực sự thuộc nhóm CÓ mục
+    // Reading (và đã bật phần Homework) — đúng buổi Reading mới được phép tự tiêu bước ngoặc vuông.
     const READING_SUBJECT = 'Reading';
-    const readingSyl = getSyllabusPosition(READING_SUBJECT);
-    if (readingSyl){
-      const currentReadingLabel = readingSyl.list[readingSyl.currentIndex];
-      if (isMarkerUnit(currentReadingLabel)) advanceItems.push({ subject: READING_SUBJECT, unit: currentReadingLabel });
+    const groupHasReadingItem = selectedHomeworkGroup && HOMEWORK_TEMPLATES[selectedHomeworkGroup].items.some(it => it.id === 'reading');
+    if (document.getElementById('homeworkEnableCheck').checked && groupHasReadingItem){
+      const readingSyl = getSyllabusPosition(READING_SUBJECT);
+      if (readingSyl){
+        const currentReadingLabel = readingSyl.list[readingSyl.currentIndex];
+        if (isMarkerUnit(currentReadingLabel)) advanceItems.push({ subject: READING_SUBJECT, unit: currentReadingLabel });
+      }
     }
     if (advanceItems.length){
       // [SỬA] Sau khi gửi cập nhật, LÀM MỚI lại dữ liệu lộ trình trong bộ nhớ trình duyệt (chạy
@@ -2493,12 +2645,36 @@ function formatVN(iso){
 
 /* ============== ĐIỀU HƯỚNG MÀN HÌNH (welcome / classSelect / dataEntry / manage) ============== */
 function showScreen(name){
-  const ids = { welcome: 'screen-welcome', classSelect: 'screen-classSelect', attendance: 'screen-attendance', dataEntry: 'screen-dataEntry', manage: 'screen-manage' };
+  const ids = { welcome: 'screen-welcome', classSelect: 'screen-classSelect', attendance: 'screen-attendance', dataEntry: 'screen-dataEntry', manage: 'screen-manage', curriculum: 'screen-curriculum' };
   Object.keys(ids).forEach(key => {
     const el = document.getElementById(ids[key]);
     if (el) el.style.display = (key === name) ? 'block' : 'none';
   });
   if (name === 'manage') renderManagementView();
+  if (name === 'curriculum') renderCurriculumView();
+}
+
+// [MỚI] Màn "Chương trình học — để báo in sách": Grammar/Speaking là danh sách cố định (đầu sách
+// GV đặt tên sẵn theo chương trình chung), riêng Listening/Reading LẤY THẲNG từ dữ liệu "Đầu sách
+// BTVN" đã có trong STATE.homeworkProgress (không hard-code), để sửa 1 chỗ là khớp theo, tránh
+// lệch giữa 2 nơi.
+function renderCurriculumView(){
+  renderCurriculumBookList('Listening', 'curriculumListeningList');
+  renderCurriculumBookList('Reading', 'curriculumReadingList');
+}
+
+function renderCurriculumBookList(subjectLabel, containerId){
+  const box = document.getElementById(containerId);
+  const rows = STATE.homeworkProgress
+    .filter(p => p.subject === subjectLabel && p.bookName)
+    .slice()
+    .sort((a, b) => a.className.localeCompare(b.className, 'vi'));
+  if (!rows.length){ box.innerHTML = `<p class="empty-note">Chưa có lớp nào khai đầu sách ${esc(subjectLabel)} ở tab "Đầu sách BTVN".</p>`; return; }
+  box.innerHTML = rows.map(r => `
+    <div class="curriculum-book-row">
+      <span class="cls">${esc(r.className)}</span>
+      <span class="book">${esc(r.bookName)}</span>
+    </div>`).join('');
 }
 function renderManagementView(){
   renderMgmtClassSelect();
