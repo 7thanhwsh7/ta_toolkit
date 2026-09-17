@@ -317,7 +317,7 @@
        chiều ngang như mọi field khác, không thì bị hẹp bất thường gây khoảng trống thừa. */
     .field[style*="flex:0 0 190px"],
     .field[style*="flex:0 0 250px"],
-    .field[style*="flex:0 0 110px"]{
+    .field[style*="flex:0 0 150px"]{
       flex:1 1 auto !important;
       width:100% !important;
     }
@@ -765,13 +765,11 @@
 
     <div class="card">
       <h2 style="font-style:normal;">Listening</h2>
-      <p class="hint">Đúng theo thứ tự đã khai ở tab "Đầu sách BTVN" — sửa ở đó thì danh sách này tự cập nhật theo, không cần sửa ở đây.</p>
       <div id="curriculumListeningList"></div>
     </div>
 
     <div class="card">
       <h2 style="font-style:normal;">Reading</h2>
-      <p class="hint">Đúng theo thứ tự đã khai ở tab "Đầu sách BTVN" — sửa ở đó thì danh sách này tự cập nhật theo, không cần sửa ở đây.</p>
       <div id="curriculumReadingList"></div>
     </div>
 
@@ -1028,6 +1026,7 @@ async function loadData(){
   try {
     renderAll();
     if (document.getElementById('screen-manage').style.display !== 'none') renderManagementView();
+    if (document.getElementById('screen-curriculum').style.display !== 'none') renderCurriculumView();
   } catch(err){
     console.error('loadData: dữ liệu đã tải được nhưng lỗi khi render giao diện:', err);
     toast('Đã tải được dữ liệu nhưng lỗi hiển thị: ' + (err && err.message ? err.message : err), true);
@@ -1535,7 +1534,7 @@ function getPrintOrderReminderHtml(itemId){
   const nextBookHtml = syl.nextBookName
     ? ` Chuẩn bị báo in sách tiếp theo: <b>${esc(syl.nextBookName)}</b>.`
     : '';
-  return `<div class="reminder-banner">⚠️ Lớp <b>${esc(cls)}</b> sắp học hết sách <b>${esc(syl.bookName)}</b> (${esc(subjectLabel)}) — còn ${remaining} bài.${nextBookHtml}</div>`;
+  return `<div class="reminder-banner">⚠️ Lớp <b>${esc(cls)}</b> sắp học hết sách <b>${esc(syl.bookName)}</b> (${esc(subjectLabel)}).${nextBookHtml}</div>`;
 }
 
 // [MỚI] Nhắc riêng cho SPEAKING — KHÔNG dùng chung cơ chế Reading/Listening ở trên, vì Speaking
@@ -1571,7 +1570,7 @@ function getSpeakingPrintReminderHtml(itemId){
   const dictationIdx = SPEAKING_BOOK_ORDER.indexOf('Dictation');
   const nextSpeakingBook = (dictationIdx !== -1 && dictationIdx < SPEAKING_BOOK_ORDER.length - 1) ? SPEAKING_BOOK_ORDER[dictationIdx + 1] : '';
   const nextBookHtml = nextSpeakingBook ? ` Chuẩn bị báo in sách Speaking tiếp theo: <b>${esc(nextSpeakingBook)}</b>.` : '';
-  return `<div class="reminder-banner">⚠️ Lớp <b>${esc(cls)}</b> (GE) sắp học xong <b>Dictation</b> (Explorer Foundation) — còn ${remaining} bài.${nextBookHtml}</div>`;
+  return `<div class="reminder-banner">⚠️ Lớp <b>${esc(cls)}</b> (GE) sắp học xong <b>Dictation</b> (Explorer Foundation).${nextBookHtml}</div>`;
 }
 
 function renderHomeworkItems(){
