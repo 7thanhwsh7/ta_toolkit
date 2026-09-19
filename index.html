@@ -246,6 +246,28 @@
   .curriculum-list li{padding:9px 0;border-bottom:1px solid var(--line);font-size:14px;}
   .curriculum-list li:last-child{border-bottom:none;}
   .curriculum-list .footnote{display:block;margin-top:2px;}
+
+  .resource-links{display:flex;flex-direction:column;gap:10px;margin-top:14px;}
+  .resource-links button{
+    display:flex;align-items:center;gap:8px;width:100%;text-align:left;
+    background:var(--ink-3);border:1px solid var(--line);border-radius:8px;
+    padding:11px 14px;color:var(--input-text);text-decoration:none;
+    font-size:14px;font-weight:500;transition:.15s border-color,.15s opacity;
+  }
+  .resource-links button:hover{border-color:var(--gold-dim);opacity:.9;}
+
+  .link-modal-overlay{
+    display:none;position:fixed;inset:0;background:rgba(23,16,25,0.72);
+    align-items:center;justify-content:center;z-index:200;padding:20px;
+  }
+  .link-modal-overlay.show{display:flex;}
+  .link-modal{
+    background:var(--ink-2);border:1px solid var(--line);border-radius:var(--radius);
+    padding:20px;max-width:340px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,0.35);
+  }
+  .link-modal p{margin:0 0 16px;font-size:14px;color:var(--cream);line-height:1.5;word-break:break-word;}
+  .link-modal .link-modal-actions{display:flex;flex-direction:column;gap:10px;}
+  .link-modal button{width:100%;}
   .curriculum-book-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px;}
   .curriculum-book-row:last-child{border-bottom:none;}
   .curriculum-book-row .cls{font-weight:600;}
@@ -365,6 +387,7 @@
       <div style="display:flex;flex-direction:column;gap:14px;max-width:360px;margin:0 auto;">
         <button class="btn-gold" style="padding:16px;font-size:16px;" onclick="showScreen('classSelect')">Nhập liệu</button>
         <button class="btn-ghost" style="padding:16px;font-size:16px;" onclick="showScreen('curriculum')">📚 Chương trình học (để báo in sách)</button>
+        <button class="btn-ghost" style="padding:16px;font-size:16px;" onclick="showScreen('review')">📖 Tài liệu dò bài</button>
         <button class="btn-ghost" style="padding:16px;font-size:16px;" onclick="showScreen('manage')">⚙️ Quản lý lớp & học sinh</button>
       </div>
     </div>
@@ -775,6 +798,47 @@
 
   </div>
 
+  <!-- MÀN TÀI LIỆU DÒ BÀI -->
+  <div id="screen-review" style="display:none;">
+
+  <button class="btn-ghost btn-sm" style="margin-bottom:14px;" onclick="showScreen('welcome')">← Quay lại</button>
+
+    <div class="card">
+      <h2>📖 Tài liệu dò bài</h2>
+      <p class="hint" style="margin:0;">Phrasal Verbs &amp; Gerunds — Infinitives</p>
+    </div>
+
+    <div class="card">
+      <h2 style="font-style:normal;">Gerunds and Infinitives</h2>
+      <ul class="curriculum-list">
+        <li>Dò dàn trải đến khi hết danh sách từ — <b>1 tuần dò 2 buổi</b>.</li>
+        <li>Buổi trùng lịch dò từ vựng Reading: dò random 15 từ Reading <b>+</b> dò Gerund–Infinitive.</li>
+        <li>Mặt trước phiếu: dò bài. Mặt sau: BT tự luyện tại nhà <span style="display:inline;color:var(--cream-dim);">(optional)</span> kèm key để HS tự kiểm tra.</li>
+        <li>Set 1–2: Gerunds. Set 3–18: Gerunds + Infinitives.</li>
+      </ul>
+      <div class="resource-links">
+        <button type="button" onclick="openLinkModal('https://drive.google.com/file/d/13nrCfTcWD3lkfvmKWGgNI-QoxyAyHlgH/view?usp=drive_link','Danh sách từ vựng (Quizlet)')">📄 Danh sách từ vựng (Quizlet)</button>
+        <button type="button" onclick="openLinkModal('https://quizlet.com/join/8TWGbxyk9?i=6oiec5&x=1bqt','Link Quizlet')">🔗 Link Quizlet</button>
+        <button type="button" onclick="openLinkModal('https://drive.google.com/file/d/1eyEXHdD1NfUYCH5otXTkJnjXJsjTtUlX/view?usp=sharing','Phiếu dò bài')">📝 Phiếu dò bài</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 style="font-style:normal;">Phrasal Verbs</h2>
+      <ul class="curriculum-list">
+        <li>Dò dàn trải đến khi hết danh sách từ — <b>1 tuần dò 2 buổi</b>.</li>
+        <li>Buổi trùng lịch dò từ vựng Reading: dò random 15 từ Reading <b>+</b> dò Phrasal Verbs.</li>
+        <li>Mặt trước phiếu: dò bài. Mặt sau: BT tự luyện tại nhà <span style="display:inline;color:var(--cream-dim);">(optional)</span> kèm key để HS tự kiểm tra.</li>
+      </ul>
+      <div class="resource-links">
+        <button type="button" onclick="openLinkModal('https://drive.google.com/file/d/1P235f7UmzELMG5bIKmEFTyMbDgxJi8rj/view?usp=drive_link','Danh sách từ (Quizlet)')">📄 Danh sách từ (Quizlet)</button>
+        <button type="button" onclick="openLinkModal('https://quizlet.com/join/VUefwDUpq?i=6oiec5&x=1bqt','Link Quizlet')">🔗 Link Quizlet</button>
+        <button type="button" onclick="openLinkModal('https://drive.google.com/file/d/1JVV_oFgBDvmFiXN5XrZffLy6DB8MuEKk/view?usp=sharing','Phiếu dò bài')">📝 Phiếu dò bài</button>
+      </div>
+    </div>
+
+  </div>
+
   <!-- MÀN QUẢN LÝ LỚP & HỌC SINH -->
   <div id="screen-manage" style="display:none;">
 
@@ -813,6 +877,17 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="link-modal-overlay" id="linkModalOverlay" onclick="if(event.target===this) closeLinkModal();">
+  <div class="link-modal">
+    <p id="linkModalLabel"></p>
+    <div class="link-modal-actions">
+      <button type="button" class="btn-gold" id="linkModalOpenBtn">🔗 Mở link</button>
+      <button type="button" class="btn-ghost" id="linkModalCopyBtn">📋 Copy link</button>
+      <button type="button" class="btn-ghost" onclick="closeLinkModal()">Huỷ</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ============== CONFIG ============== */
@@ -857,6 +932,44 @@ function toast(msg, isErr){
   t.textContent = msg;
   t.className = 'toast show' + (isErr ? ' err' : '');
   setTimeout(()=> t.className = 'toast', 2200);
+}
+
+/* ============== MODAL "MỞ LINK / COPY LINK" (dùng cho tab Tài liệu dò bài) ============== */
+function openLinkModal(url, label){
+  document.getElementById('linkModalLabel').textContent = label;
+  const overlay = document.getElementById('linkModalOverlay');
+  const openBtn = document.getElementById('linkModalOpenBtn');
+  const copyBtn = document.getElementById('linkModalCopyBtn');
+  openBtn.onclick = () => { window.open(url, '_blank', 'noopener'); closeLinkModal(); };
+  copyBtn.onclick = () => copyLinkToClipboard(url);
+  overlay.classList.add('show');
+}
+function closeLinkModal(){
+  document.getElementById('linkModalOverlay').classList.remove('show');
+}
+function copyLinkToClipboard(url){
+  const done = () => { toast('Đã copy link'); closeLinkModal(); };
+  const fail = () => { toast('Copy thất bại — thử lại', true); };
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(done).catch(() => {
+      // Một số trình duyệt (VD WebView cũ) chặn Clipboard API — dùng lại cách copy qua textarea ẩn.
+      legacyCopy(url) ? done() : fail();
+    });
+  } else {
+    legacyCopy(url) ? done() : fail();
+  }
+}
+function legacyCopy(text){
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch(e) { ok = false; }
+  document.body.removeChild(ta);
+  return ok;
 }
 
 async function withLoadingButton(btnId, loadingText, fn){
@@ -2643,7 +2756,7 @@ function formatVN(iso){
 
 /* ============== ĐIỀU HƯỚNG MÀN HÌNH (welcome / classSelect / dataEntry / manage) ============== */
 function showScreen(name){
-  const ids = { welcome: 'screen-welcome', classSelect: 'screen-classSelect', attendance: 'screen-attendance', dataEntry: 'screen-dataEntry', manage: 'screen-manage', curriculum: 'screen-curriculum' };
+  const ids = { welcome: 'screen-welcome', classSelect: 'screen-classSelect', attendance: 'screen-attendance', dataEntry: 'screen-dataEntry', manage: 'screen-manage', curriculum: 'screen-curriculum', review: 'screen-review' };
   Object.keys(ids).forEach(key => {
     const el = document.getElementById(ids[key]);
     if (el) el.style.display = (key === name) ? 'block' : 'none';
