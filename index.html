@@ -1332,6 +1332,7 @@ function toggleTestFields(){
   const cat = currentTestCat();
   const isOther = cat && cat.isOther;
   document.getElementById('customNameField').style.display = isOther ? 'flex' : 'none';
+  document.getElementById('unitField').style.display = isOther ? 'none' : 'flex';
 }
 
 function renderScoreShortcuts(){
@@ -1888,7 +1889,8 @@ function saveScoreBatch(){
     if (!testTypeName){ toast('Nhập tên bài ở ô "Tên bài (tự nhập)"', true); return; }
   }
   const unit = document.getElementById('testUnitInput').value.trim();
-  if (!unit){ toast('Nhập Unit / tên bài', true); return; }
+  if (!cat.isOther && !unit){ toast('Nhập Unit / tên bài', true); return; }
+  const unitPart = unit ? ' ' + unit : '';
   const date = document.getElementById('dateInput').value;
   const total = document.getElementById('testTotalInput').value;
   const rows = Array.from(document.querySelectorAll('#scoreBatchTable .score-batch-row'))
@@ -1906,7 +1908,7 @@ function saveScoreBatch(){
       date, className: cls, studentName: row.studentName,
       testType: testTypeName, kind: 'score', unit,
       score: row.score, totalScore: total, note: row.note
-    }, `${row.studentName} — ${testTypeName} ${unit}: ${labelParts}`, testTypeName);
+    }, `${row.studentName} — ${testTypeName}${unitPart}: ${labelParts}`, testTypeName);
   });
   savePendingToLocalStorage();
   document.querySelectorAll('.score-batch-student-cb').forEach(cb => cb.checked = false);
@@ -2228,7 +2230,8 @@ function saveTestScore(){
   const total = document.getElementById('testTotalInput').value;
   const score = document.getElementById('testScoreInput').value;
   const unit = document.getElementById('testUnitInput').value.trim();
-  if (unit === '') { toast('Nhập Unit / tên bài', true); return; }
+  if (!cat.isOther && unit === '') { toast('Nhập Unit / tên bài', true); return; }
+  const unitPart = unit ? ' ' + unit : '';
   if (score === '' && !note.trim()) { toast('Nhập điểm hoặc chọn lý do (Quên sách/Chưa làm bài)', true); return; }
 
   const scorePart = score !== '' ? score + (total ? '/' + total : '') : '';
@@ -2241,10 +2244,10 @@ function saveTestScore(){
       testType: testTypeName, kind: 'score',
       unit, score, totalScore: total, note
     };
-    queuePending('testScores', payload, `${studentName} — ${testTypeName} ${unit}: ${labelParts}`, testTypeName);
+    queuePending('testScores', payload, `${studentName} — ${testTypeName}${unitPart}: ${labelParts}`, testTypeName);
 
     if (needsFollowUp){
-      const followUpText = `Điểm thấp: ${testTypeName} ${unit}${labelParts ? ' - ' + labelParts : ''}`;
+      const followUpText = `Điểm thấp: ${testTypeName}${unitPart}${labelParts ? ' - ' + labelParts : ''}`;
       const followUpPayload = {
         date, className: cls, studentName, errorType: followUpText, evidence: '', needsFollowUp: true, reportExempt: true
       };
