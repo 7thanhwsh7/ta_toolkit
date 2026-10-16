@@ -372,14 +372,109 @@
     .toast{left:14px;right:14px;transform:none;text-align:center;bottom:16px;}
   }
 </style>
+
+<!-- ================= GIAO DIỆN TẾT =================
+     Toàn bộ phần trang trí Tết nằm gọn trong block <style id="tet-theme"> này + khối
+     <div class="tet-decor"> và <div class="tet-greeting"> ngay đầu <body>
+<div class="tet-decor" aria-hidden="true">
+  <span class="tet-lantern l1">🏮</span><span class="tet-lantern l2">🏮</span>
+  <span class="tet-lantern r1">🏮</span><span class="tet-lantern r2">🏮</span>
+  <span class="tet-petal p1">🌼</span><span class="tet-petal p2">🌸</span><span class="tet-petal p3">🌼</span>
+  <span class="tet-petal p4">🌸</span><span class="tet-petal p5">🌼</span>
+</div>
+.
+     Hết Tết muốn quay về giao diện cũ: xoá 3 phần đó là xong, không ảnh hưởng chức năng. -->
+<style id="tet-theme">
+  :root{
+    --ink:#8E1117;
+    --ink-2:#FFF8EC;
+    --ink-3:#3B1410;
+    --gold:#C8102E;
+    --gold-dim:#A8141F;
+    --sage:#2F7D4F;
+    --rust:#D9480F;
+    --cream:#3A1A12;
+    --cream-dim:#8A5A44;
+    --line:#EBC98A;
+    --input-text:#FFF3DC;
+    --input-text-dim:#C9A27A;
+    --tet-gold:#F6C445;
+  }
+  body{
+    background-color:var(--ink);
+    background-image:radial-gradient(rgba(246,196,69,.13) 1.5px, transparent 1.6px);
+    background-size:22px 22px;
+  }
+  header{border-bottom-color:rgba(246,196,69,.45);}
+  header .brand{color:var(--tet-gold);}
+  header .sub{color:#F9D98A;}
+  .entry-group-label{color:var(--tet-gold);}
+  .card{border-color:var(--line);box-shadow:0 6px 22px rgba(60,0,0,.28);}
+  .card h2{color:var(--gold-dim);}
+  .btn-gold{background:var(--gold);color:#FFF8EC;}
+  .btn-sage{background:var(--sage);color:#FFFFFF;}
+  .step-num{background:var(--tet-gold);color:#7A0E14;}
+  .chip.chip-active,.chip:hover{background:var(--gold);border-color:var(--gold);color:#FFF8EC;}
+  .tab-btn.active{background:var(--gold);border-color:var(--gold);}
+  .score-new-badge{background:var(--tet-gold);color:#7A0E14;}
+
+  .tet-greeting{
+    display:flex;align-items:center;justify-content:center;gap:10px;
+    margin:-12px 0 24px;padding:10px 14px;border-radius:12px;
+    background:rgba(246,196,69,.14);border:1px dashed rgba(246,196,69,.55);
+    color:#FCE7B0;font-family:'Playfair Display',serif;font-style:italic;font-weight:600;font-size:16px;
+    text-align:center;
+  }
+  .tet-decor{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden;}
+  .wrap{position:relative;z-index:2;}
+  .tet-lantern{
+    position:absolute;top:-4px;font-size:40px;line-height:1;
+    transform-origin:top center;animation:tet-swing 3.2s ease-in-out infinite;
+    filter:drop-shadow(0 4px 6px rgba(0,0,0,.35));
+  }
+  .tet-lantern.l1{left:14px;}
+  .tet-lantern.l2{left:62px;font-size:30px;animation-delay:-1.2s;}
+  .tet-lantern.r1{right:14px;animation-delay:-.6s;}
+  .tet-lantern.r2{right:62px;font-size:30px;animation-delay:-2s;}
+  @keyframes tet-swing{0%,100%{transform:rotate(-6deg);}50%{transform:rotate(6deg);}}
+  .tet-petal{position:absolute;top:-40px;font-size:18px;opacity:.75;animation:tet-fall linear infinite;}
+  .tet-petal.p1{left:8%;animation-duration:14s;}
+  .tet-petal.p2{left:27%;animation-duration:18s;animation-delay:-6s;font-size:14px;}
+  .tet-petal.p3{left:52%;animation-duration:16s;animation-delay:-11s;}
+  .tet-petal.p4{left:74%;animation-duration:20s;animation-delay:-3s;font-size:14px;}
+  .tet-petal.p5{left:91%;animation-duration:15s;animation-delay:-8s;}
+  @keyframes tet-fall{
+    0%{transform:translate(0,0) rotate(0deg);}
+    100%{transform:translate(40px,110vh) rotate(360deg);}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .tet-lantern,.tet-petal{animation:none;}
+    .tet-petal{display:none;}
+  }
+  @media (max-width:640px){
+    .tet-lantern{font-size:26px;}
+    .tet-lantern.l1,.tet-lantern.l2,.tet-lantern.r2{display:none;}
+    .tet-lantern.r1{right:8px;}
+    .tet-greeting{font-size:14px;margin:-6px 0 16px;}
+    .tet-petal{font-size:13px;opacity:.55;}
+  }
+</style>
 </head>
 <body>
+<div class="tet-decor" aria-hidden="true">
+  <span class="tet-lantern l1">🏮</span><span class="tet-lantern l2">🏮</span>
+  <span class="tet-lantern r1">🏮</span><span class="tet-lantern r2">🏮</span>
+  <span class="tet-petal p1">🌼</span><span class="tet-petal p2">🌸</span><span class="tet-petal p3">🌼</span>
+  <span class="tet-petal p4">🌸</span><span class="tet-petal p5">🌼</span>
+</div>
+
 <div class="wrap">
 
   <header>
     <div class="brand">G.EDU — TA Toolkit</div>
     <div class="sub">Nhật ký lớp học</div>
   </header>
+
 
   <div id="screen-welcome">
     <div class="card" style="text-align:center;padding:36px 22px;">
@@ -778,7 +873,7 @@
         <li>Kid's Box 3</li>
         <li>Kid's Box 4</li>
         <li>Kid's Box 5</li>
-        <li>Dictation — <b>chỉ dành cho lớp GE, E4K không học</b></li>
+        <li>Dictation — <b>chỉ dành cho lớp GE</b><span class="footnote">E4K học xong Kid's Box 5 thì chuyển thẳng qua Speak Now 2</span></li>
         <li>Speak Now 2</li>
         <li>Speak Now 3</li>
         <li>Speak Now 4</li>
@@ -2995,6 +3090,130 @@ function toggleStepCard(card){
 
 initStepAccordion();
 init();
+</script>
+
+<!-- ================= PHÁO HOA TẾT =================
+     Bắn pháo hoa mỗi khi thao tác lưu/xác nhận THÀNH CÔNG (dựa vào toast xanh báo thành công).
+     Không bắn khi báo lỗi (toast đỏ) hay khi đang tải ("Đang..."). Không sửa logic gốc — chỉ bọc
+     thêm hàm toast(). Hết Tết muốn bỏ: xoá nguyên block <script id="tet-fireworks"> này. -->
+<script id="tet-fireworks">
+(function(){
+  var lastPoint = null;
+  document.addEventListener('pointerdown', function(e){
+    var btn = e.target.closest ? e.target.closest('button') : null;
+    if (!btn) return;
+    var r = btn.getBoundingClientRect();
+    lastPoint = { x: r.left + r.width / 2, y: r.top + r.height / 2, t: Date.now() };
+  }, true);
+
+  var COLORS = ['#F6C445', '#FFD966', '#FF4D4D', '#FF8A3D', '#FFF3DC', '#FF6FA8'];
+  var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function fireworks(){
+    if (reduce) return;
+    var W = window.innerWidth, H = window.innerHeight;
+    var useBtn = lastPoint && (Date.now() - lastPoint.t) < 15000;
+    var cx = useBtn ? lastPoint.x : W / 2, cy = useBtn ? lastPoint.y : H / 2;
+
+    var c = document.createElement('canvas');
+    var dpr = window.devicePixelRatio || 1;
+    c.width = W * dpr; c.height = H * dpr;
+    c.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:150;';
+    document.body.appendChild(c);
+    var ctx = c.getContext('2d');
+    ctx.scale(dpr, dpr);
+
+    var parts = [];
+    function burst(x, y, n, speed){
+      for (var i = 0; i < n; i++){
+        var a = Math.random() * Math.PI * 2, v = speed * (0.4 + Math.random() * 0.8);
+        parts.push({ x: x, y: y, vx: Math.cos(a) * v, vy: Math.sin(a) * v,
+          life: 1, decay: 0.012 + Math.random() * 0.012,
+          r: 1.6 + Math.random() * 2.2, c: COLORS[(Math.random() * COLORS.length) | 0] });
+      }
+    }
+    burst(cx, cy, 70, 7);
+    var spread = Math.min(W, 520) / 2;
+    setTimeout(function(){ burst(cx - spread * (0.4 + Math.random() * 0.5), Math.max(80, cy - 120 - Math.random() * 120), 50, 6); }, 180);
+    setTimeout(function(){ burst(cx + spread * (0.4 + Math.random() * 0.5), Math.max(80, cy - 120 - Math.random() * 120), 50, 6); }, 360);
+
+    var start = performance.now();
+    (function frame(now){
+      ctx.clearRect(0, 0, W, H);
+      for (var i = parts.length - 1; i >= 0; i--){
+        var p = parts[i];
+        p.vx *= 0.97; p.vy = p.vy * 0.97 + 0.12;
+        p.x += p.vx; p.y += p.vy; p.life -= p.decay;
+        if (p.life <= 0){ parts.splice(i, 1); continue; }
+        ctx.globalAlpha = Math.max(p.life, 0);
+        ctx.fillStyle = p.c;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+      }
+      if (parts.length || now - start < 500) requestAnimationFrame(frame);
+      else c.remove();
+    })(start);
+  }
+
+  /* ---- Âm thanh khi "Tạo báo cáo buổi học" thành công: chuông vui + vài tiếng pháo nổ lách tách.
+     Tự tạo bằng Web Audio, không cần file âm thanh. Trình duyệt chỉ cho phát âm thanh sau khi người
+     dùng bấm, nên "mở khoá" âm thanh ngay lúc TA bấm nút Tạo báo cáo, rồi phát khi lưu xong. ---- */
+  var audioCtx = null;
+  function unlockAudio(){
+    try {
+      if (!audioCtx){
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return;
+        audioCtx = new AC();
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    } catch (e) {}
+  }
+  ['pointerdown', 'click', 'touchend'].forEach(function(ev){
+    document.addEventListener(ev, function(e){
+      if (e.target.closest && e.target.closest('#generateReportBtn')) unlockAudio();
+    }, true);
+  });
+
+  function playReportSound(){
+    if (!audioCtx) return;
+    try {
+      var t0 = audioCtx.currentTime + 0.02;
+      var master = audioCtx.createGain();
+      master.gain.value = 0.18;
+      master.connect(audioCtx.destination);
+
+      [1046.5, 1318.5, 1568, 2093].forEach(function(f, i){
+        var t = t0 + i * 0.09;
+        var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = 'triangle'; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(0.9, t + 0.015);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+        o.connect(g); g.connect(master);
+        o.start(t); o.stop(t + 0.5);
+      });
+
+      var len = Math.floor(audioCtx.sampleRate * 0.06);
+      var buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+      var d = buf.getChannelData(0);
+      for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
+      [0.42, 0.55, 0.63, 0.78].forEach(function(dt){
+        var src = audioCtx.createBufferSource(), g = audioCtx.createGain();
+        src.buffer = buf; g.gain.value = 0.5 + Math.random() * 0.4;
+        src.connect(g); g.connect(master);
+        src.start(t0 + dt + Math.random() * 0.04);
+      });
+    } catch (e) {}
+  }
+
+  var originalToast = toast;
+  toast = function(msg, isErr){
+    originalToast(msg, isErr);
+    var text = String(msg || '');
+    if (!isErr && !/^Đang/.test(text)) fireworks();
+    if (!isErr && text === 'Đã lưu snapshot report gần nhất') playReportSound();
+  };
+})();
 </script>
 </body>
 </html>
