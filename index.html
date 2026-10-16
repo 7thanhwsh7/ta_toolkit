@@ -875,6 +875,30 @@
       <div id="mgmtStudentList"></div>
     </div>
 
+    <div class="card">
+      <h2>Cài đặt Homework Listening</h2>
+      <p class="hint">Dành cho lớp có cuốn Listening chỉ làm 1 bài/tuần. Tick vào thì Listening chỉ được gợi ý ở đúng buổi đã chọn; buổi còn lại tool tự bỏ tick và giữ nguyên lộ trình.</p>
+      <div class="row">
+        <div class="field">
+          <label>Lớp</label>
+          <select id="mgmtListenClassSelect" onchange="fillListeningScheduleForm()"></select>
+        </div>
+      </div>
+      <label class="checkbox-row" style="margin-bottom:14px;">
+        <input type="checkbox" id="mgmtListenWeeklyCheck" onchange="toggleListenSessionRow()"> 1 tuần chỉ làm 1 bài Listening
+      </label>
+      <div class="row" id="mgmtListenSessionRow" style="display:none;">
+        <div class="field">
+          <label>Giao Listening vào buổi</label>
+          <select id="mgmtListenSessionSelect">
+            <option value="Ngữ pháp">Buổi học Ngữ pháp</option>
+            <option value="Nói + Đọc">Buổi học Nói + Đọc</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn-gold" onclick="saveListeningSchedule()">Lưu cài đặt</button>
+    </div>
+
   </div>
 
 </div>
@@ -1683,6 +1707,71 @@ function getSpeakingPrintReminderHtml(itemId){
   return `<div class="reminder-banner">⚠️ Lớp <b>${esc(cls)}</b> (GE) sắp học xong <b>Dictation</b> (Explorer Foundation).${nextBookHtml}</div>`;
 }
 
+/* ============== [MỚI] LISTENING 1 TUẦN 1 BÀI ============== */
+const LISTEN_SESSION_BY_GROUP = { grammar: 'Ngữ pháp', speaking: 'Nói + Đọc' };
+
+function getListeningSchedule(cls){
+  const row = STATE.homeworkProgress.find(p => p.className === cls && p.subject === 'Listening');
+  return {
+    weeklyOnce: !!(row && row.weeklyOnce),
+    session: (row && row.listeningSession) || 'Ngữ pháp'
+  };
+}
+
+// Lớp ở chế độ 1 tuần 1 bài mà buổi hôm nay KHÔNG phải buổi giao Listening -> tự bỏ tick mục
+// Listening (không đưa vào báo cáo, không chạy lộ trình). Không hiện note. TA vẫn tick lại được.
+function getListeningScheduleNoteHtml(itemId){
+  if (itemId !== 'listening' || !selectedHomeworkGroup) return '';
+  const cls = document.getElementById('classSelect').value;
+  if (!cls) return '';
+  const s = getListeningSchedule(cls);
+  if (s.weeklyOnce && LISTEN_SESSION_BY_GROUP[selectedHomeworkGroup] !== s.session){
+    setTimeout(() => { const cb = document.getElementById('hw_cb_listening'); if (cb) cb.checked = false; }, 0);
+  }
+  return '';
+}
+
+function renderListeningScheduleForm(){
+  const sel = document.getElementById('mgmtListenClassSelect');
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = classOptionsHtml();
+  if (STATE.classes.includes(prev)) sel.value = prev;
+  fillListeningScheduleForm();
+}
+
+function fillListeningScheduleForm(){
+  const cls = document.getElementById('mgmtListenClassSelect').value;
+  const s = getListeningSchedule(cls);
+  document.getElementById('mgmtListenWeeklyCheck').checked = s.weeklyOnce;
+  document.getElementById('mgmtListenSessionSelect').value = s.session;
+  toggleListenSessionRow();
+}
+
+function toggleListenSessionRow(){
+  const on = document.getElementById('mgmtListenWeeklyCheck').checked;
+  document.getElementById('mgmtListenSessionRow').style.display = on ? 'flex' : 'none';
+}
+
+async function saveListeningSchedule(){
+  const cls = document.getElementById('mgmtListenClassSelect').value;
+  if (!cls){ toast('Chọn lớp trước đã', true); return; }
+  const weeklyOnce = document.getElementById('mgmtListenWeeklyCheck').checked;
+  const session = document.getElementById('mgmtListenSessionSelect').value;
+
+  const res = await apiPost('saveListeningSchedule', { className: cls, weeklyOnce, session });
+  if (!res || !res.success){ toast('Lỗi: ' + (res && res.error ? res.error : 'không lưu được'), true); return; }
+
+  let row = STATE.homeworkProgress.find(p => p.className === cls && p.subject === 'Listening');
+  if (!row){
+    row = { className: cls, subject: 'Listening', bookName: '', nextUnit: '' };
+    STATE.homeworkProgress.push(row);
+  }
+  row.weeklyOnce = weeklyOnce;
+  row.listeningSession = session;
+  toast(weeklyOnce ? `Đã lưu: ${cls} làm Listening 1 bài/tuần, giao buổi ${session}` : `Đã lưu: ${cls} làm Listening mọi buổi`);
+}
+
 function renderHomeworkItems(){
   const box = document.getElementById('homeworkItemsBox');
   if (!selectedHomeworkGroup){ box.innerHTML = ''; return; }
@@ -1703,6 +1792,7 @@ function renderHomeworkItems(){
       </div>
       ${getPrintOrderReminderHtml(item.id)}
       ${getSpeakingPrintReminderHtml(item.id)}
+      ${getListeningScheduleNoteHtml(item.id)}
     </div>
   `).join('');
 
@@ -2794,6 +2884,7 @@ function renderCurriculumBookList(subjectLabel, containerId){
 function renderManagementView(){
   renderMgmtClassSelect();
   renderMgmtStudentList();
+  renderListeningScheduleForm();
 }
 
 function renderMgmtClassSelect(){
