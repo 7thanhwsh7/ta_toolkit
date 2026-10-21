@@ -310,6 +310,7 @@
   .score-batch-row input{min-width:0;padding:8px 9px;font-size:14px;min-height:40px;}
   .score-batch-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
   .mgmt-item:last-child{border-bottom:none;}
+  .private-note-banner{display:inline-block;background:rgba(47,125,79,0.12);border:1px dashed var(--sage);color:var(--sage);font-size:12.5px;font-weight:700;padding:7px 12px;border-radius:8px;margin:6px 0 10px;line-height:1.45;}
   /* Màn Key chấm bài — mục thu gọn, bấm để xổ danh sách sách */
   .key-section{background:var(--ink-2);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.12);}
   .key-section summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:16px 18px;}
@@ -719,7 +720,7 @@
 
     <div class="action-row" id="scoreSharedActions">
       <label class="checkbox-row note-action">
-        <input type="checkbox" id="testFollowUpCheck"> Note lại cho buổi tới
+        <input type="checkbox" id="testFollowUpCheck"> 🔔 Nhắc tôi kiểm tra lại vào buổi sau
       </label>
       <button class="btn-gold" id="saveTestScoreBtn" onclick="saveTestScore()">Xác nhận điểm</button>
     </div>
@@ -776,7 +777,7 @@
 
     <div class="action-row">
       <label class="checkbox-row note-action">
-        <input type="checkbox" id="errorFollowUpCheck"> Note lại cho buổi tới
+        <input type="checkbox" id="errorFollowUpCheck"> 🔔 Nhắc tôi kiểm tra lại vào buổi sau
       </label>
       <button class="btn-rust" id="saveErrorLogBtn" onclick="saveErrorLog()">Xác nhận lỗi vi phạm</button>
     </div>
@@ -784,14 +785,16 @@
 
   <!-- NHẮC NHỞ TỰ DO -->
   <div class="card" data-step="6">
-    <h2><span class="step-num">6</span>Nhắc nhở khác cho buổi tới</h2>
-    <p class="hint">Note tự do bất cứ điều gì cần kiểm tra lại vào buổi sau, không nhất thiết gắn với 1 học sinh cụ thể. Đây là ghi chú riêng của TA — lưu ngay lập tức, không xuất hiện trong nội dung báo cáo gửi Classroom.</p>
-    <div class="row">
+    <h2><span class="step-num">6</span>Ghi chú riêng của TA cho buổi tới</h2>
+    <div class="private-note-banner">🔒 CHỈ TA THẤY — KHÔNG gửi cho học sinh/phụ huynh, KHÔNG có trong báo cáo Classroom.</div>
+    <p class="hint">TA gõ tự do việc cần làm ở buổi sau — VD: <i>phát sách mới</i>, <i>thu học phí</i>, <i>nhắc cả lớp mang sách</i>... Mỗi ô sẽ thành <b>1 mục checklist</b> ở <b>Bước 2 — Ghi chú của TA</b> khi chọn lớp này buổi sau; kiểm tra xong thì bấm <b>"Đã kiểm tra"</b> để gạch khỏi danh sách.</p>
+    <!-- Ẩn: ghi chú TA gõ tự do, không cần chọn phạm vi/học sinh — luôn lưu theo lớp đang chọn -->
+    <div class="row" style="display:none;">
       <div class="field">
         <label>Áp dụng cho</label>
         <select id="reminderScopeSelect" onchange="toggleReminderStudentField()">
+          <option value="class" selected>Cả lớp đang chọn</option>
           <option value="student">1 học sinh cụ thể</option>
-          <option value="class">Cả lớp đang chọn</option>
         </select>
       </div>
       <div class="field" id="reminderStudentField">
@@ -805,11 +808,11 @@
     </div>
     <div class="row">
       <div class="field">
-        <label>Nội dung nhắc nhở</label>
-        <input type="text" id="reminderNoteInput">
+        <label>Việc cần làm buổi sau</label>
+        <div id="reminderLinesBox"></div>
       </div>
     </div>
-    <button class="btn-sage" id="saveReminderBtn" onclick="saveReminder()">Thêm nhắc nhở</button>
+    <button class="btn-sage" id="saveReminderBtn" onclick="saveReminder()">🔒 Lưu ghi chú riêng</button>
   </div>
 
   </div>
@@ -1400,6 +1403,7 @@ async function init(){
 
   await loadData();
   loadPendingFromLocalStorage();
+  renderReminderLines();
   updateJournalStoryReminder(); // lớp được khôi phục từ phiên trước -> tải ngầm luôn
   renderSessionLog();
   renderFollowUps();
@@ -2378,7 +2382,7 @@ function renderFollowUps(){
   }
 
   box.innerHTML = all.map(item => {
-    const who = item.studentName ? esc(item.studentName) : 'Cả lớp';
+    const who = item.studentName ? esc(item.studentName) : (item.kind === 'reminder' && item.reminderType !== 'testProgress' ? '📝 Ghi chú TA' : 'Cả lớp');
     const isPending = String(item.id).startsWith('local_');
     const pendingTag = isPending ? ` <i style="color:var(--gold-dim);font-weight:400;">(chưa lưu)</i>` : '';
     const tag = item.kind === 'error' ? `<b>${esc(item.label)}</b>` : esc(item.label);
@@ -2861,28 +2865,69 @@ async function saveReminder(){
   await withLoadingButton('saveReminderBtn', 'Đang lưu...', saveReminderImpl);
 }
 
+// [MỚI] Mỗi ô = 1 mục checklist riêng. Bấm "+ Thêm mục" (hoặc Enter ở ô cuối) để tạo ô mới.
+let reminderLines = [''];
+
+function renderReminderLines(focusIndex){
+  const box = document.getElementById('reminderLinesBox');
+  if (!box) return;
+  box.innerHTML = reminderLines.map((val, i) => `
+    <div style="display:flex;gap:8px;margin-bottom:8px;">
+      <input type="text" class="reminder-line-input" value="${esc(val)}" placeholder="${i === 0 ? 'VD: Phát sách mới' : 'VD: Thu học phí'}"
+        oninput="reminderLines[${i}] = this.value" onkeydown="reminderLineKeydown(event, ${i})" style="flex:1;">
+      ${reminderLines.length > 1 ? `<button type="button" class="btn-ghost btn-sm" style="width:auto;min-width:40px;" onclick="removeReminderLine(${i})">✕</button>` : ''}
+    </div>
+  `).join('') + `<button type="button" class="btn-ghost btn-sm" style="width:auto;" onclick="addReminderLine()">+ Thêm mục</button>`;
+  if (focusIndex !== undefined){
+    const inputs = box.querySelectorAll('.reminder-line-input');
+    if (inputs[focusIndex]) inputs[focusIndex].focus();
+  }
+}
+
+function addReminderLine(){
+  reminderLines.push('');
+  renderReminderLines(reminderLines.length - 1);
+}
+
+function removeReminderLine(i){
+  reminderLines.splice(i, 1);
+  if (!reminderLines.length) reminderLines = [''];
+  renderReminderLines();
+}
+
+function reminderLineKeydown(event, i){
+  if (event.key !== 'Enter') return;
+  event.preventDefault();
+  if (i === reminderLines.length - 1) addReminderLine();
+  else renderReminderLines(i + 1);
+}
+
 async function saveReminderImpl(){
   const cls = document.getElementById('classSelect').value;
-  const stu = document.getElementById('reminderStudentSelect').value;
-  const scope = document.getElementById('reminderScopeSelect').value;
-  const note = document.getElementById('reminderNoteInput').value.trim();
-
   if (!cls || cls === '__new__') { toast('Chọn lớp trước đã', true); return; }
-  if (scope === 'student' && (!stu || stu === '__new__')) { toast('Chọn học sinh trước đã', true); return; }
-  if (!note) { toast('Nhập nội dung nhắc nhở', true); return; }
 
-  const studentName = scope === 'student' ? stu : '';
+  const notes = reminderLines.map(l => l.trim()).filter(Boolean);
+  if (!notes.length) { toast('Nhập ít nhất 1 mục cần kiểm tra', true); return; }
+
   const date = document.getElementById('dateInput').value;
-
-  const res = await apiPost('addReminder', { date, className: cls, studentName, note });
-  if (res.success){
-    STATE.reminders.unshift({ id: res.id, date: formatVN(date), className: cls, studentName, note, reminderType: 'manual' });
-    renderFollowUps();
-    document.getElementById('reminderNoteInput').value = '';
-    toast('Đã thêm nhắc nhở');
-  } else {
-    toast(res.error || 'Có lỗi xảy ra', true);
+  let saved = 0;
+  const failed = [];
+  // Mỗi mục lưu thành 1 ghi chú riêng -> buổi sau hiện thành từng dòng checklist ở Bước 2.
+  for (const note of notes){
+    const res = await apiPost('addReminder', { date, className: cls, studentName: '', note });
+    if (res && res.success){
+      STATE.reminders.unshift({ id: res.id, date: formatVN(date), className: cls, studentName: '', note, reminderType: 'manual' });
+      saved++;
+    } else {
+      failed.push(note);
+    }
   }
+  renderFollowUps();
+  reminderLines = failed.length ? failed : [''];  // mục lỗi giữ lại để TA bấm lưu lại
+  renderReminderLines();
+
+  if (failed.length) toast(`Lưu được ${saved}/${notes.length} mục — ${failed.length} mục lỗi còn giữ trong ô, bấm lưu lại`, true);
+  else toast(`Đã lưu ${saved} mục ghi chú riêng — sẽ hiện ở Bước 2 buổi sau`);
 }
 
 /* ============== BÁO CÁO BUỔI HỌC (theo ngày) ============== */
