@@ -711,6 +711,7 @@
       <div class="field">
         <label>Loại lỗi</label>
         <select id="errorCatSelect" onchange="handleErrorCatSelectChange()"></select>
+        <div id="journalStoryReminder"></div>
       </div>
     </div>
 
@@ -1228,6 +1229,7 @@ function todayStr(){
 /* ============== INIT ============== */
 async function init(){
   document.getElementById('dateInput').value = todayStr();
+  document.getElementById('dateInput').addEventListener('change', updateJournalStoryReminder);
 
   if (CONFIG.API_URL.includes('PASTE_YOUR')) {
     toast('Chưa gắn API_URL — xem hướng dẫn trong file HTML', true);
@@ -1235,6 +1237,7 @@ async function init(){
 
   await loadData();
   loadPendingFromLocalStorage();
+  updateJournalStoryReminder(); // lớp được khôi phục từ phiên trước -> tải ngầm luôn
   renderSessionLog();
   renderFollowUps();
 }
@@ -1324,6 +1327,7 @@ function renderClassSelect(){
     if (document.getElementById('scoreMultiModeCheck').checked) renderScoreMultiStudentList();
     if (document.getElementById('scoreBatchModeCheck').checked) renderScoreBatchStudentList();
     if (document.getElementById('attendanceMultiModeCheck').checked) renderAttendanceMultiStudentList();
+    updateJournalStoryReminder();
   };
   refreshTomSelect('classSelect');
 }
@@ -1548,6 +1552,81 @@ function onErrorCatChange(){
   if (detailLabel){
     detailLabel.textContent = isRequired ? 'Chi tiết cụ thể (bắt buộc — bài nào/Unit nào)' : 'Chi tiết cụ thể (không bắt buộc)';
   }
+  updateJournalStoryReminder();
+}
+
+/* ============== [MỚI] NHẮC: BUỔI TRƯỚC QUÊN ĐEM TRUYỆN -> KHÔNG CẦN NỘP JOURNAL ==============
+   Khi TA chọn loại lỗi có chữ "Journal" (VD "Chưa nộp Journal"), tool tự tìm BUỔI GẦN NHẤT TRƯỚC
+   ngày đang chọn của lớp này (lùi tối đa 7 ngày, lấy ngày gần nhất có dữ liệu report) và xem bạn nào
+   bị ghi lỗi "Quên ... truyện". Nếu có -> hiện dòng in nghiêng nhắc TA các bạn đó KHÔNG cần nộp
+   Journal, để khỏi tick nhầm "chưa nộp Journal". Chỉ nhắc, không chặn lưu. */
+const JOURNAL_LOOKBACK_DAYS = 7;
+const prevForgotStoryCache = {};
+let journalForgotNames = [];
+let journalReminderToken = 0;
+
+function isJournalErrorCat(name){ return /journal/i.test(String(name || '')); }
+function isForgotStoryError(text){
+  const t = String(text || '').toLowerCase();
+  return t.includes('quên') && t.includes('truyện');
+}
+function localIsoDate(d){
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function getPrevSessionForgotStory(cls, date){
+  const key = cls + '|' + date;
+  if (prevForgotStoryCache[key]) return prevForgotStoryCache[key];
+  const promise = (async () => {
+    const [y, m, d] = date.split('-').map(Number);
+    const dates = [];
+    for (let i = 1; i <= JOURNAL_LOOKBACK_DAYS; i++) dates.push(localIsoDate(new Date(y, m - 1, d - i)));
+    const results = await Promise.all(dates.map(dt => apiGet('reportDay', { className: cls, date: dt })));
+    let anyOk = false;
+    for (let i = 0; i < dates.length; i++){
+      const r = results[i];
+      if (!r || r.error) continue;
+      anyOk = true;
+      const hasData = (r.tests || []).length || (r.errors || []).length || (r.attendance || []).length;
+      if (!hasData) continue;
+      const names = [...new Set((r.errors || []).filter(e => isForgotStoryError(e.errorType)).map(e => e.studentName))];
+      return { date: dates[i], names };
+    }
+    if (!anyOk) throw new Error('reportDay lỗi');
+    return { date: null, names: [] };
+  })();
+  prevForgotStoryCache[key] = promise;
+  promise.catch(() => { delete prevForgotStoryCache[key]; });
+  return promise;
+}
+
+async function updateJournalStoryReminder(){
+  const box = document.getElementById('journalStoryReminder');
+  if (!box) return;
+  const token = ++journalReminderToken;
+  const cat = document.getElementById('errorCatSelect').value;
+  const cls = currentClass();
+  const date = document.getElementById('dateInput').value;
+
+  const clear = () => {
+    box.innerHTML = '';
+    journalForgotNames = [];
+    if (document.getElementById('errorMultiModeCheck').checked) renderErrorMultiStudentList();
+  };
+  if (!cls || !date){ clear(); return; }
+  // Tải ngầm sẵn ngay khi có lớp + ngày (chưa cần chọn loại lỗi Journal) — tới Bước 5 là có kết quả liền.
+  if (!isJournalErrorCat(cat)){ getPrevSessionForgotStory(cls, date).catch(() => {}); clear(); return; }
+
+  box.innerHTML = `<p class="footnote" style="font-style:italic;margin:6px 0 0;">Đang kiểm tra buổi trước có ai quên đem truyện...</p>`;
+  let info;
+  try { info = await getPrevSessionForgotStory(cls, date); }
+  catch (e){ if (token === journalReminderToken) clear(); return; }
+  if (token !== journalReminderToken) return; // TA đã đổi lớp/ngày/loại lỗi trong lúc chờ
+  if (!info.names.length){ clear(); return; }
+
+  journalForgotNames = info.names;
+  box.innerHTML = `<p style="font-style:italic;font-size:13px;line-height:1.5;color:var(--rust);margin:8px 0 0;">⚠️ Buổi trước (${esc(formatVN(info.date))}) quên đem truyện: <b>${info.names.map(esc).join(', ')}</b></p>`;
+  if (document.getElementById('errorMultiModeCheck').checked) renderErrorMultiStudentList();
 }
 
 function toggleErrorMultiMode(){
@@ -1566,7 +1645,7 @@ function renderErrorMultiStudentList(){
   if (!list.length){ box.innerHTML = `<p class="empty-note">Lớp này chưa có học sinh.</p>`; return; }
   box.innerHTML = list.map((s, i) => `
     <label class="checkbox-row" style="padding:6px 0;">
-      <input type="checkbox" class="error-multi-student-cb" value="${escAttr(s.name)}"> ${i + 1}. ${esc(s.name)}
+      <input type="checkbox" class="error-multi-student-cb" value="${escAttr(s.name)}"> ${i + 1}. ${esc(s.name)}${journalForgotNames.includes(s.name) ? ` <i style="color:var(--rust);font-size:12px;">(buổi trước quên truyện)</i>` : ''}
     </label>`).join('');
 }
 
