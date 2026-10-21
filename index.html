@@ -310,6 +310,27 @@
   .score-batch-row input{min-width:0;padding:8px 9px;font-size:14px;min-height:40px;}
   .score-batch-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
   .mgmt-item:last-child{border-bottom:none;}
+  /* Màn Key chấm bài — mục thu gọn, bấm để xổ danh sách sách */
+  .key-section{background:var(--ink-2);border:1px solid var(--line);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.12);}
+  .key-section summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:16px 18px;}
+  .key-section summary::-webkit-details-marker{display:none;}
+  .key-sec-title{font-family:'Playfair Display',serif;font-weight:600;font-size:18px;color:var(--gold-dim);flex:1 1 auto;}
+  .key-sec-count{font-size:12px;color:var(--cream-dim);white-space:nowrap;}
+  .key-sec-arrow{color:var(--cream-dim);font-size:13px;transition:transform .18s ease;}
+  .key-section[open] .key-sec-arrow{transform:rotate(90deg);}
+  .key-section[open] summary{border-bottom:1px solid var(--line);}
+  .key-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 18px;}
+  .key-row + .key-row{border-top:1px dashed var(--line);}
+  .key-book{font-weight:600;font-size:14px;color:var(--cream);}
+  .key-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;}
+  button.key-chip{background:transparent;border:1px solid var(--gold-dim);color:var(--gold-dim);border-radius:999px;padding:6px 13px;font-size:12.5px;font-weight:600;min-height:34px;width:auto;}
+  button.key-chip:hover{background:var(--gold);border-color:var(--gold);color:#FFF8EC;opacity:1;}
+  @media (max-width:640px){
+    .key-section summary{padding:14px 12px;}
+    .key-row{padding:10px 12px;}
+    button.key-chip{width:auto;min-height:34px;}
+  }
+
   .mgmt-item span{font-size:14px;}
   .mgmt-item button{padding:6px 12px;font-size:12px;min-height:auto;}
 
@@ -484,6 +505,7 @@
         <button class="btn-gold" style="padding:16px;font-size:16px;" onclick="showScreen('classSelect')">Nhập liệu</button>
         <button class="btn-ghost" style="padding:16px;font-size:16px;" onclick="showScreen('curriculum')">📚 Chương trình học (để báo in sách)</button>
         <button class="btn-ghost" style="padding:16px;font-size:16px;" onclick="showScreen('review')">📖 Tài liệu dò bài</button>
+        <button class="btn-ghost" style="padding:16px;font-size:16px;" onclick="showScreen('key')">🔑 Key chấm bài</button>
         <button class="btn-ghost" style="padding:16px;font-size:16px;" onclick="showScreen('manage')">⚙️ Quản lý lớp & học sinh</button>
       </div>
     </div>
@@ -945,6 +967,147 @@
         <button type="button" onclick="openLinkModal('https://drive.google.com/file/d/1Tuhas5rya5PoScUX7e06r2O-9A8nNoKO/view?usp=sharing','Bảng động từ Bất quy tắc (5 nhóm)')">📄 Bảng động từ Bất quy tắc (5 nhóm)</button>
       </div>
     </div>
+
+  </div>
+
+  <!-- MÀN KEY CHẤM BÀI -->
+  <div id="screen-key" style="display:none;">
+
+  <button class="btn-ghost btn-sm" style="margin-bottom:14px;" onclick="showScreen('welcome')">← Quay lại</button>
+
+    <div class="card">
+      <h2>🔑 Key chấm bài</h2>
+      <p class="hint" style="margin:0;">Bấm vào từng mục để xem danh sách sách, rồi bấm vào key cần mở.</p>
+    </div>
+
+    <details class="key-section">
+      <summary><span class="key-sec-title">Listening</span><span class="key-sec-count">8 sách · 12 key</span><span class="key-sec-arrow">▸</span></summary>
+      <div class="key-list">
+        <div class="key-row">
+          <span class="key-book">More Step by Step 1</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/g4sbviyjnrwtmaeygki2l/ALS6FZYHYFIhJfhYN8sqszk/More%20Step%20by%20Step%20Listening%201%2C2%2C3/More%20Step%20by%20Step%20Listening%201/MSBS1_AnswerKey_Eng.pdf?rlkey=m5kqduvku18zlen5q7wf50ueq&st=pyi4dtrh&dl=0','Key More Step by Step 1')">Mở key</button></span>
+        </div>
+        <div class="key-row">
+          <span class="key-book">More Step by Step 2</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/g4sbviyjnrwtmaeygki2l/AGH7iSslIIX_Cb3jTmyTbkM/More%20Step%20by%20Step%20Listening%201%2C2%2C3/More%20Step%20by%20Step%20Listening%202/MSBS2_AnswerKey_Eng.pdf?rlkey=m5kqduvku18zlen5q7wf50ueq&st=tyzpt2nm&dl=0','Key More Step by Step 2')">Mở key</button></span>
+        </div>
+        <div class="key-row">
+          <span class="key-book">More Step by Step 3</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/g4sbviyjnrwtmaeygki2l/AKdXCXz3kYhG97cjPFxGcu0/More%20Step%20by%20Step%20Listening%201%2C2%2C3/More%20Step%20by%20Step%20Listening%203/MSBS3_AnswerKey_Eng.pdf?rlkey=m5kqduvku18zlen5q7wf50ueq&st=de027epp&dl=0','Key More Step by Step 3')">Mở key</button></span>
+        </div>
+        <div class="key-row">
+          <span class="key-book">Listening 1</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/06sam108vdv3nejtznzp9/AMWtl14gHhJ5UmKsaPBEw8o/1/lis%20basic%201%20AK.pdf?rlkey=gs781g9d98lazz8br3uub2180&st=dr7c1pxo&dl=0','Key Listening 1 — 1A')">1A</button><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/06sam108vdv3nejtznzp9/AGEnBhO1KCGFpUqnZczYJ0I/1/DLS%201_3e_AK.pdf?rlkey=gs781g9d98lazz8br3uub2180&st=tgpndv09&dl=0','Key Listening 1 — 1B')">1B</button></span>
+        </div>
+        <div class="key-row">
+          <span class="key-book">Listening 2</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/06sam108vdv3nejtznzp9/AO1Ak3pKhCjv6kpS4fl2nns/2/tactics%20developing%202%20AK.pdf?rlkey=gs781g9d98lazz8br3uub2180&st=ednlqhmm&dl=0','Key Listening 2 — 2A')">2A</button><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/06sam108vdv3nejtznzp9/ACu0dWBFIDDF7cD0QLPkyMk/2/DLS%202_3e_AK.pdf?rlkey=gs781g9d98lazz8br3uub2180&st=x6s8okfn&dl=0','Key Listening 2 — 2B')">2B</button></span>
+        </div>
+        <div class="key-row">
+          <span class="key-book">Listening 3</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/06sam108vdv3nejtznzp9/AKzUZt43ZNWTG0E6Qz7q5N0/3/lis%20expanding%203%20AK.pdf?rlkey=gs781g9d98lazz8br3uub2180&st=xcttz5qm&dl=0','Key Listening 3 — 3A')">3A</button><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/06sam108vdv3nejtznzp9/AEcoQmrOzowRibLtdVtPqBw/3/DLS%203_3e_AK.pdf?rlkey=gs781g9d98lazz8br3uub2180&st=x0nnda8d&dl=0','Key Listening 3 — 3B')">3B</button></span>
+        </div>
+        <div class="key-row">
+          <span class="key-book">Listening 4</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://drive.google.com/file/d/1CqHGwMCRSBM2U2r7YN4TGRbUVDugtL5r/view?usp=drive_link','Key Listening 4 — Key textbook')">Key textbook</button><button type="button" class="key-chip" onclick="openLinkModal('https://drive.google.com/file/d/1t5uHHN29JVGSKCm-1Mgb7tmjhhXej4g9/view?usp=drive_link','Key Listening 4 — Key workbook')">Key workbook</button></span>
+        </div>
+        <div class="key-row">
+          <span class="key-book">Listening 5 (bản mới)</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://drive.google.com/file/d/1zNH0eyf0HWDtPNF0jJ3v0oUU7zTnAKWE/view?usp=drive_link','Key Listening 5 (bản mới)')">Mở key</button></span>
+        </div>
+      </div>
+    </details>
+    <details class="key-section">
+      <summary><span class="key-sec-title">Reading</span><span class="key-sec-count">11 sách · 11 key</span><span class="key-sec-arrow">▸</span></summary>
+      <div class="key-list">
+        <div class="key-row">
+          <span class="key-book">Subject Link 3</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/plm4qep1du2hz3t8yisxy/AMjgEboKCzQKm4vLHp35adA/3/Subject%20Link%20Starter%203%20Workbook%20Key.pdf?rlkey=vcq53pjaaibqs8vcj4t780krz&st=161nk65x&dl=0','Key Subject Link 3')">Mở key</button></span>
+        </div>
+        <div class="key-row">
+          <span class="key-book">Subject Link 4</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/plm4qep1du2hz3t8yisxy/ABP1sVAjtlhrrRI9EMwiJqA/4/Subject%20Link%204%20Workbook%20Key.pdf?rlkey=vcq53pjaaibqs8vcj4t780krz&st=y865zkw7&dl=0','Key Subject Link 4')">Mở key</button></span>
+        </div>
+        <div class="key-row">
+          <span class="key-book">Subject Link 5</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/plm4qep1du2hz3t8yisxy/AJvZUfwYfoXWBYeEpQOBAig/5/Subject%20Link%205%20Workbook%20Key.pdf?rlkey=vcq53pjaaibqs8vcj4t780krz&st=i6kt0lk1&dl=0','Key Subject Link 5')">Mở key</button></span>
+        </div>
+        <div class="key-row">
+          <span class="key-book">Explorer Foundation</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/q82s3n7qh52rdefzvrz4v/ADxgDQNaud4pMVkXt6VI3U4/Reading%20Explorer/reading%20explorer%20%20foundations/Foudation%20AK.pdf?rlkey=yc5pmrg5y7i1yld2rjcyeecyy&st=dvsefqgl&dl=0','Key Explorer Foundation')">Mở key</button></span>
+        </div>
+        <div class="key-row">
+          <span class="key-book">Explorer 1</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/ts1ksn9422mol89h61n08/AJVo2o_InMGQ_cvc4kNEUrs/reading%20explorer%201/1%20Answer%20Key.pdf?rlkey=k7f0q70zamc6qqk26g2qv818a&st=ic4dxn9j&dl=0','Key Explorer 1')">Mở key</button></span>
+        </div>
+        <div class="key-row">
+          <span class="key-book">Explorer 2</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/ts1ksn9422mol89h61n08/AP-mdyn8rOYTcCY3yCJziZk/reading%20explorer%202/2%20Answer%20Key.pdf?rlkey=k7f0q70zamc6qqk26g2qv818a&st=3wko188u&dl=0','Key Explorer 2')">Mở key</button></span>
+        </div>
+        <div class="key-row">
+          <span class="key-book">Explorer 3</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/ts1ksn9422mol89h61n08/AIhlDVseIinkCYwtO9Dcu3Y/reading%20explorer%203/3%20Answer%20Key.pdf?rlkey=k7f0q70zamc6qqk26g2qv818a&st=3900cfvr&dl=0','Key Explorer 3')">Mở key</button></span>
+        </div>
+        <div class="key-row">
+          <span class="key-book">Explorer 4</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/ts1ksn9422mol89h61n08/ADVlI_Lm9nXx3bg2bWKoxG8/reading%20explorer%204/4%20Answer%20Key.pdf?rlkey=k7f0q70zamc6qqk26g2qv818a&st=kb9p1hzh&dl=0','Key Explorer 4')">Mở key</button></span>
+        </div>
+        <div class="key-row">
+          <span class="key-book">Explorer 5</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/ts1ksn9422mol89h61n08/ACNGlPqhLGXdkcOucAWcZ5U/reading%20explorer%205/5%20Answer%20Key.pdf?rlkey=k7f0q70zamc6qqk26g2qv818a&st=r47jiyq1&dl=0','Key Explorer 5')">Mở key</button></span>
+        </div>
+        <div class="key-row">
+          <span class="key-book">Making Connections 3</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/vkmdk1fguzhnij98fwp4f/APB32K-O-nQAnFa13KZ0syI/Making%20Connections%203%20-%20with%20answer.pdf?rlkey=3sao1w5rt45u23qpce3nv3o34&st=6du67w0w&dl=0','Key Making Connections 3')">Mở key</button></span>
+        </div>
+        <div class="key-row">
+          <span class="key-book">Making Connections 4</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/y9femy0pmzldvy9gugzwg/ANrTAjsKpViNOCSbyfeZ9ns/making%20connections%20tb%204.pdf?rlkey=59860mwqlg2xe0ti0qulp4vr2&st=q0pfmzhv&dl=0','Key Making Connections 4')">Mở key</button></span>
+        </div>
+      </div>
+    </details>
+    <details class="key-section">
+      <summary><span class="key-sec-title">Grammar — Unit Tests</span><span class="key-sec-count">4 sách · 4 key</span><span class="key-sec-arrow">▸</span></summary>
+      <div class="key-list">
+        <div class="key-row">
+          <span class="key-book">FOG 2</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/nrtr91gp1g7eplocvx6yc/AFIf9KskQmoySlvEVfmFtMk/2/Answer_Key/Unit_Review_Test_AK?rlkey=4pm9q29vkcmcd8gnpb3w1shdv&st=4s4j35zr&dl=0','Key FOG 2')">Mở key</button></span>
+        </div>
+        <div class="key-row">
+          <span class="key-book">FOG 3</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/nrtr91gp1g7eplocvx6yc/AAfRkybpo__neoNr707A0CQ/3/Tests%20fog%203/FOG_5e_LEVEL3_All_tests/Unit%20Tests/L3_All_Units_Review_Tests?rlkey=4pm9q29vkcmcd8gnpb3w1shdv&st=eiuqq1ok&dl=0','Key FOG 3')">Mở key</button></span>
+        </div>
+        <div class="key-row">
+          <span class="key-book">FOG 4</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/nrtr91gp1g7eplocvx6yc/AGknEGNWk_nxP8moV0QBk3g/4/Tests%20FOG%204/Answer_Key/FOG%204_Review_Tests_AK?rlkey=4pm9q29vkcmcd8gnpb3w1shdv&subfolder_nav_tracking=1&st=52jqtfc4&dl=0','Key FOG 4')">Mở key</button></span>
+        </div>
+        <div class="key-row">
+          <span class="key-book">FOG 5</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/nrtr91gp1g7eplocvx6yc/ADmFOrNLyNYXzDh3F2Da2ic/5/Tests%20FOG%205/Answer_Key/Unit_Review_Tests_AK?rlkey=4pm9q29vkcmcd8gnpb3w1shdv&subfolder_nav_tracking=1&st=5r5d9k53&dl=0','Key FOG 5')">Mở key</button></span>
+        </div>
+      </div>
+    </details>
+    <details class="key-section">
+      <summary><span class="key-sec-title">Grammar — Homework</span><span class="key-sec-count">4 sách · 8 key</span><span class="key-sec-arrow">▸</span></summary>
+      <div class="key-list">
+        <div class="key-row">
+          <span class="key-book">FOG 2</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/nrtr91gp1g7eplocvx6yc/AIfrDPvO4y8xZKxCXAyKzgI/2/FOG2_5e_SB_AK.pdf?rlkey=4pm9q29vkcmcd8gnpb3w1shdv&st=rftqsteu&dl=0','Key FOG 2 — Student book')">Student book</button><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/nrtr91gp1g7eplocvx6yc/ANdpSuOpPvYJi7MdnUc9efc/2/Focus%20on%20Grammar%202%20(Fifth%20edition).pdf?rlkey=4pm9q29vkcmcd8gnpb3w1shdv&st=kumhny56&dl=0','Key FOG 2 — Review (p.475)')">Review (p.475)</button></span>
+        </div>
+        <div class="key-row">
+          <span class="key-book">FOG 3</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/nrtr91gp1g7eplocvx6yc/AHatV2TWJqx4kCjTctbv7D0/3/FOG3_5e_SB_AK.pdf?rlkey=4pm9q29vkcmcd8gnpb3w1shdv&st=hvuwcepe&dl=0','Key FOG 3 — Student book')">Student book</button><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/nrtr91gp1g7eplocvx6yc/AKget8oU483Ha_8SpEcrnao/3/Focus%20on%20Grammar%203%20(Fifth%20edition).pdf?rlkey=4pm9q29vkcmcd8gnpb3w1shdv&st=omv6x9rf&dl=0','Key FOG 3 — Review (p.505)')">Review (p.505)</button></span>
+        </div>
+        <div class="key-row">
+          <span class="key-book">FOG 4</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/nrtr91gp1g7eplocvx6yc/AMo9YFhIoc-8KFN31dAY070/4/FOG4_5e_SB_AK.pdf?rlkey=4pm9q29vkcmcd8gnpb3w1shdv&st=acqo5bza&dl=0','Key FOG 4 — Student book')">Student book</button><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/nrtr91gp1g7eplocvx6yc/APdpbCLcgOzZSOObLUdfKy8/4/Focus%20on%20Grammar%204%20(Fifth%20edition).pdf?rlkey=4pm9q29vkcmcd8gnpb3w1shdv&st=1jj1w67c&dl=0','Key FOG 4 — Review (p.504)')">Review (p.504)</button></span>
+        </div>
+        <div class="key-row">
+          <span class="key-book">FOG 5</span>
+          <span class="key-chips"><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/nrtr91gp1g7eplocvx6yc/ANiGgXkkk_WTk57svdhyMac/5/FOG5_5e_SB_AK.pdf?rlkey=4pm9q29vkcmcd8gnpb3w1shdv&st=x8qvbiih&dl=0','Key FOG 5 — Student book')">Student book</button><button type="button" class="key-chip" onclick="openLinkModal('https://www.dropbox.com/scl/fo/nrtr91gp1g7eplocvx6yc/ANhIK8cVz68uVQuYk329-qI/5/Focus%20on%20Grammar%205%20(Fifth%20edition).pdf?rlkey=4pm9q29vkcmcd8gnpb3w1shdv&st=1jj1w67c&dl=0','Key FOG 5 — Review (p.456)')">Review (p.456)</button></span>
+        </div>
+      </div>
+    </details>
 
   </div>
 
@@ -3041,7 +3204,7 @@ function formatVN(iso){
 
 /* ============== ĐIỀU HƯỚNG MÀN HÌNH (welcome / classSelect / dataEntry / manage) ============== */
 function showScreen(name){
-  const ids = { welcome: 'screen-welcome', classSelect: 'screen-classSelect', attendance: 'screen-attendance', dataEntry: 'screen-dataEntry', manage: 'screen-manage', curriculum: 'screen-curriculum', review: 'screen-review' };
+  const ids = { welcome: 'screen-welcome', classSelect: 'screen-classSelect', attendance: 'screen-attendance', dataEntry: 'screen-dataEntry', manage: 'screen-manage', curriculum: 'screen-curriculum', review: 'screen-review', key: 'screen-key' };
   Object.keys(ids).forEach(key => {
     const el = document.getElementById(ids[key]);
     if (el) el.style.display = (key === name) ? 'block' : 'none';
