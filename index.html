@@ -395,99 +395,99 @@
   }
 </style>
 
-<!-- ================= GIAO DIỆN TẾT =================
-     Toàn bộ phần trang trí Tết nằm gọn trong block <style id="tet-theme"> này + khối
-     <div class="tet-decor"> và <div class="tet-greeting"> ngay đầu <body>
-<div class="tet-decor" aria-hidden="true">
-  <span class="tet-lantern l1">🏮</span><span class="tet-lantern l2">🏮</span>
-  <span class="tet-lantern r1">🏮</span><span class="tet-lantern r2">🏮</span>
-  <span class="tet-petal p1">🌼</span><span class="tet-petal p2">🌸</span><span class="tet-petal p3">🌼</span>
-  <span class="tet-petal p4">🌸</span><span class="tet-petal p5">🌼</span>
-</div>
-.
-     Hết Tết muốn quay về giao diện cũ: xoá 3 phần đó là xong, không ảnh hưởng chức năng. -->
-<style id="tet-theme">
+<!-- ================= GIAO DIỆN GIÁNG SINH =================
+     Toàn bộ phần trang trí Giáng sinh nằm gọn trong block <style id="xmas-theme"> này + khối
+     <div class="xmas-decor"> ngay đầu <body> + block <script id="xmas-effects"> cuối file.
+     Hết mùa muốn quay về giao diện cũ: xoá 3 phần đó là xong, không ảnh hưởng chức năng. -->
+<style id="xmas-theme">
   :root{
-    --ink:#8E1117;
-    --ink-2:#FFF8EC;
-    --ink-3:#3B1410;
+    --ink:#0E3B2A;
+    --ink-2:#FFFBF3;
+    --ink-3:#173528;
     --gold:#C8102E;
-    --gold-dim:#A8141F;
+    --gold-dim:#A3122A;
     --sage:#2F7D4F;
     --rust:#D9480F;
-    --cream:#3A1A12;
-    --cream-dim:#8A5A44;
-    --line:#EBC98A;
-    --input-text:#FFF3DC;
-    --input-text-dim:#C9A27A;
-    --tet-gold:#F6C445;
+    --cream:#1F2A22;
+    --cream-dim:#5E6E62;
+    --line:#E2D3AE;
+    --input-text:#F4FAF5;
+    --input-text-dim:#9FB8A8;
+    --xmas-gold:#F2C14E;
   }
   body{
     background-color:var(--ink);
-    background-image:radial-gradient(rgba(246,196,69,.13) 1.5px, transparent 1.6px);
-    background-size:22px 22px;
+    background-image:
+      radial-gradient(rgba(255,255,255,.10) 1.5px, transparent 1.6px),
+      radial-gradient(rgba(255,255,255,.06) 1px, transparent 1.1px);
+    background-size:26px 26px, 13px 13px;
+    background-position:0 0, 7px 9px;
   }
-  header{border-bottom-color:rgba(246,196,69,.45);}
-  header .brand{color:var(--tet-gold);}
-  header .sub{color:#F9D98A;}
-  .entry-group-label{color:var(--tet-gold);}
-  .card{border-color:var(--line);box-shadow:0 6px 22px rgba(60,0,0,.28);}
+  header{border-bottom-color:rgba(242,193,78,.45);}
+  header .brand{color:var(--xmas-gold);}
+  header .sub{color:#E9F3EC;}
+  .entry-group-label{color:var(--xmas-gold);}
+  .card{border-color:var(--line);box-shadow:0 6px 22px rgba(0,20,10,.35);border-top:4px solid var(--gold);}
   .card h2{color:var(--gold-dim);}
-  .btn-gold{background:var(--gold);color:#FFF8EC;}
+  .btn-gold{background:var(--gold);color:#FFFBF3;}
   .btn-sage{background:var(--sage);color:#FFFFFF;}
-  .step-num{background:var(--tet-gold);color:#7A0E14;}
-  .chip.chip-active,.chip:hover{background:var(--gold);border-color:var(--gold);color:#FFF8EC;}
+  .step-num{background:var(--sage);color:#FFFFFF;}
+  .chip.chip-active,.chip:hover{background:var(--gold);border-color:var(--gold);color:#FFFBF3;}
   .tab-btn.active{background:var(--gold);border-color:var(--gold);}
-  .score-new-badge{background:var(--tet-gold);color:#7A0E14;}
+  .score-new-badge{background:var(--xmas-gold);color:#5A0A16;}
 
-  .tet-greeting{
-    display:flex;align-items:center;justify-content:center;gap:10px;
-    margin:-12px 0 24px;padding:10px 14px;border-radius:12px;
-    background:rgba(246,196,69,.14);border:1px dashed rgba(246,196,69,.55);
-    color:#FCE7B0;font-family:'Playfair Display',serif;font-style:italic;font-weight:600;font-size:16px;
-    text-align:center;
-  }
-  .tet-decor{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden;}
+  .xmas-decor{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden;}
   .wrap{position:relative;z-index:2;}
-  .tet-lantern{
-    position:absolute;top:-4px;font-size:40px;line-height:1;
-    transform-origin:top center;animation:tet-swing 3.2s ease-in-out infinite;
+  .xmas-tree{
+    position:absolute;bottom:6px;font-size:44px;line-height:1;
     filter:drop-shadow(0 4px 6px rgba(0,0,0,.35));
   }
-  .tet-lantern.l1{left:14px;}
-  .tet-lantern.l2{left:62px;font-size:30px;animation-delay:-1.2s;}
-  .tet-lantern.r1{right:14px;animation-delay:-.6s;}
-  .tet-lantern.r2{right:62px;font-size:30px;animation-delay:-2s;}
-  @keyframes tet-swing{0%,100%{transform:rotate(-6deg);}50%{transform:rotate(6deg);}}
-  .tet-petal{position:absolute;top:-40px;font-size:18px;opacity:.75;animation:tet-fall linear infinite;}
-  .tet-petal.p1{left:8%;animation-duration:14s;}
-  .tet-petal.p2{left:27%;animation-duration:18s;animation-delay:-6s;font-size:14px;}
-  .tet-petal.p3{left:52%;animation-duration:16s;animation-delay:-11s;}
-  .tet-petal.p4{left:74%;animation-duration:20s;animation-delay:-3s;font-size:14px;}
-  .tet-petal.p5{left:91%;animation-duration:15s;animation-delay:-8s;}
-  @keyframes tet-fall{
+  .xmas-tree.t1{left:12px;}
+  .xmas-tree.t2{right:12px;font-size:36px;}
+  .xmas-ornament{
+    position:absolute;top:-4px;font-size:30px;line-height:1;
+    transform-origin:top center;animation:xmas-swing 3.4s ease-in-out infinite;
+    filter:drop-shadow(0 4px 6px rgba(0,0,0,.35));
+  }
+  .xmas-ornament.o1{left:16px;}
+  .xmas-ornament.o2{left:60px;font-size:24px;animation-delay:-1.3s;}
+  .xmas-ornament.o3{right:16px;animation-delay:-.7s;}
+  .xmas-ornament.o4{right:60px;font-size:24px;animation-delay:-2.1s;}
+  @keyframes xmas-swing{0%,100%{transform:rotate(-6deg);}50%{transform:rotate(6deg);}}
+  .xmas-snow{position:absolute;top:-40px;color:#FFFFFF;opacity:.8;animation:xmas-fall linear infinite;}
+  .xmas-snow.s1{left:6%;font-size:16px;animation-duration:13s;}
+  .xmas-snow.s2{left:21%;font-size:11px;animation-duration:17s;animation-delay:-5s;}
+  .xmas-snow.s3{left:38%;font-size:14px;animation-duration:15s;animation-delay:-10s;}
+  .xmas-snow.s4{left:55%;font-size:10px;animation-duration:19s;animation-delay:-2s;}
+  .xmas-snow.s5{left:70%;font-size:15px;animation-duration:14s;animation-delay:-7s;}
+  .xmas-snow.s6{left:84%;font-size:12px;animation-duration:18s;animation-delay:-12s;}
+  .xmas-snow.s7{left:94%;font-size:16px;animation-duration:16s;animation-delay:-4s;}
+  @keyframes xmas-fall{
     0%{transform:translate(0,0) rotate(0deg);}
-    100%{transform:translate(40px,110vh) rotate(360deg);}
+    50%{transform:translate(-20px,55vh) rotate(180deg);}
+    100%{transform:translate(20px,110vh) rotate(360deg);}
   }
   @media (prefers-reduced-motion: reduce){
-    .tet-lantern,.tet-petal{animation:none;}
-    .tet-petal{display:none;}
+    .xmas-ornament,.xmas-snow{animation:none;}
+    .xmas-snow{display:none;}
   }
   @media (max-width:640px){
-    .tet-lantern{font-size:26px;}
-    .tet-lantern.l1,.tet-lantern.l2,.tet-lantern.r2{display:none;}
-    .tet-lantern.r1{right:8px;}
-    .tet-greeting{font-size:14px;margin:-6px 0 16px;}
-    .tet-petal{font-size:13px;opacity:.55;}
+    .xmas-ornament{font-size:22px;}
+    .xmas-ornament.o1,.xmas-ornament.o2,.xmas-ornament.o4{display:none;}
+    .xmas-ornament.o3{right:8px;}
+    .xmas-tree{font-size:30px;opacity:.85;}
+    .xmas-tree.t2{display:none;}
+    .xmas-snow{opacity:.6;}
   }
 </style>
 </head>
 <body>
-<div class="tet-decor" aria-hidden="true">
-  <span class="tet-lantern l1">🏮</span><span class="tet-lantern l2">🏮</span>
-  <span class="tet-lantern r1">🏮</span><span class="tet-lantern r2">🏮</span>
-  <span class="tet-petal p1">🌼</span><span class="tet-petal p2">🌸</span><span class="tet-petal p3">🌼</span>
-  <span class="tet-petal p4">🌸</span><span class="tet-petal p5">🌼</span>
+<div class="xmas-decor" aria-hidden="true">
+  <span class="xmas-ornament o1">🔔</span><span class="xmas-ornament o2">⭐</span>
+  <span class="xmas-ornament o3">🔔</span><span class="xmas-ornament o4">⭐</span>
+  <span class="xmas-tree t1">🎄</span><span class="xmas-tree t2">🎁</span>
+  <span class="xmas-snow s1">❄</span><span class="xmas-snow s2">❅</span><span class="xmas-snow s3">❆</span>
+  <span class="xmas-snow s4">❄</span><span class="xmas-snow s5">❅</span><span class="xmas-snow s6">❆</span><span class="xmas-snow s7">❄</span>
 </div>
 
 <div class="wrap">
@@ -703,7 +703,7 @@
       <div class="row" id="scoreSharedFieldsRow" style="margin:14px 0 0;">
         <div class="field" id="scoreField">
           <label id="scoreFieldLabel">✦ Điểm</label>
-          <input type="text" id="testScoreInput">
+          <input type="text" id="testScoreInput" inputmode="decimal" placeholder="Chỉ nhập số điểm, VD: 7">
           <label style="margin-top:10px;display:block;">✦ Ghi chú nhanh</label>
           <select id="scoreShortcutSelect" onchange="handleScoreShortcutChange()" style="margin-top:4px;"></select>
           <div class="inline-add" id="addShortcutBox" style="display:none;margin-top:6px;">
@@ -713,7 +713,7 @@
         </div>
         <div class="field">
           <label>✦ Note (không bắt buộc)</label>
-          <input type="text" id="testNoteInput">
+          <input type="text" id="testNoteInput" placeholder="VD: làm nhầm bài">
         </div>
       </div>
     </div>
@@ -2235,8 +2235,15 @@ function updateScoreEntryMode(){
   document.getElementById('scoreSharedFieldsRow').style.display = isBatch ? 'none' : 'flex';
   document.getElementById('scoreSharedActions').style.display = isBatch ? 'none' : 'flex';
   if (!isBatch) document.getElementById('scoreBatchEntryBox').style.display = 'none';
+  // [SỬA] Chế độ "Nhiều bạn, CÙNG 1 kết quả" chỉ dùng cho kết quả dạng chữ (VD không làm bài,
+  // làm nhầm bài) -> ẩn hẳn ô Điểm, chỉ còn Ghi chú nhanh + Note.
   const label = document.getElementById('scoreFieldLabel');
-  if (label) label.textContent = isMulti ? '✦ Điểm (chung cho cả nhóm)' : '✦ Điểm';
+  const scoreInput = document.getElementById('testScoreInput');
+  if (label) label.style.display = isMulti ? 'none' : '';
+  if (scoreInput){
+    scoreInput.style.display = isMulti ? 'none' : '';
+    if (isMulti) scoreInput.value = '';
+  }
   if (isMulti) renderScoreMultiStudentList();
   if (isBatch) renderScoreBatchStudentList();
   if (!isMulti && !isBatch) refreshTomSelect('testStudentSelect');
@@ -2300,8 +2307,8 @@ function buildScoreBatchTable(){
     <div class="score-batch-head"><span>Học sinh</span><span>Điểm</span><span>Ghi chú</span></div>
     ${selected.map((name, i) => `<div class="score-batch-row" data-student="${esc(name)}">
       <span class="score-batch-student">${esc(name)}</span>
-      <input class="score-batch-score" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="${i === selected.length - 1 ? 'done' : 'next'}" aria-label="Điểm của ${esc(name)}">
-      <input class="score-batch-note" type="text" autocomplete="off" aria-label="Ghi chú của ${esc(name)}">
+      <input class="score-batch-score" type="text" inputmode="decimal" autocomplete="off" enterkeyhint="${i === selected.length - 1 ? 'done' : 'next'}" placeholder="Số" aria-label="Điểm của ${esc(name)}">
+      <input class="score-batch-note" type="text" autocomplete="off" placeholder="VD: làm nhầm bài" aria-label="Ghi chú của ${esc(name)}">
     </div>`).join('')}
   </div>`;
   document.getElementById('scoreBatchEntryBox').style.display = 'block';
@@ -2669,11 +2676,11 @@ function saveTestScore(){
   }
 
   const total = document.getElementById('testTotalInput').value;
-  const score = document.getElementById('testScoreInput').value;
+  const score = isMulti ? '' : document.getElementById('testScoreInput').value;
   const unit = document.getElementById('testUnitInput').value.trim();
   if (!cat.isOther && unit === '') { toast('Nhập Unit / tên bài', true); return; }
   const unitPart = unit ? ' ' + unit : '';
-  if (score === '' && !note.trim()) { toast('Nhập điểm hoặc chọn lý do (Quên sách/Chưa làm bài)', true); return; }
+  if (score === '' && !note.trim()) { toast(isMulti ? 'Chọn Ghi chú nhanh hoặc gõ Note (VD: làm nhầm bài)' : 'Nhập điểm hoặc chọn lý do (Quên sách/Chưa làm bài)', true); return; }
 
   const scorePart = score !== '' ? score + (total ? '/' + total : '') : '';
   const labelParts = [scorePart, note].filter(Boolean).join(' - ');
@@ -3035,12 +3042,17 @@ function buildReportLines(cls, date){
     const scoreParts = [];
     const noteGroups = new Map(); // lý do -> danh sách tên
     g.items.forEach(t => {
-      const hasScore = t.score !== undefined && t.score !== null && t.score !== '';
+      // [SỬA] Chỉ coi là "có điểm" khi ô Điểm thật sự có chữ số (VD 7, 7.5, 15). TA gõ chữ vào ô
+      // Điểm (VD "không làm bài") thì coi như lý do -> gộp tên theo lý do giống nhau, thay vì lặp
+      // "Trung không làm bài, Thái không làm bài..." cho từng bạn.
+      const rawScore = (t.score === undefined || t.score === null) ? '' : String(t.score).trim();
+      const hasScore = /\d/.test(rawScore);
       if (hasScore){
-        const scoreText = t.note ? `${t.score} (${lowerFirstChar(t.note)})` : `${t.score}`;
+        const scoreText = t.note ? `${rawScore} (${lowerFirstChar(t.note)})` : rawScore;
         scoreParts.push(`${t.studentName} ${scoreText}`);
       } else {
-        const reason = lowerFirstChar(t.note || 'không có điểm');
+        const reasonText = [rawScore, t.note].filter(Boolean).join(', ');
+        const reason = lowerFirstChar(reasonText || 'không có điểm');
         if (!noteGroups.has(reason)) noteGroups.set(reason, []);
         noteGroups.get(reason).push(t.studentName);
       }
@@ -3389,11 +3401,11 @@ initStepAccordion();
 init();
 </script>
 
-<!-- ================= PHÁO HOA TẾT =================
-     Bắn pháo hoa mỗi khi thao tác lưu/xác nhận THÀNH CÔNG (dựa vào toast xanh báo thành công).
-     Không bắn khi báo lỗi (toast đỏ) hay khi đang tải ("Đang..."). Không sửa logic gốc — chỉ bọc
-     thêm hàm toast(). Hết Tết muốn bỏ: xoá nguyên block <script id="tet-fireworks"> này. -->
-<script id="tet-fireworks">
+<!-- ================= HIỆU ỨNG GIÁNG SINH =================
+     Bung tuyết + kim tuyến mỗi khi thao tác lưu/xác nhận THÀNH CÔNG (dựa vào toast xanh báo thành công).
+     Không chạy khi báo lỗi (toast đỏ) hay khi đang tải ("Đang..."). Không sửa logic gốc — chỉ bọc
+     thêm hàm toast(). Hết mùa muốn bỏ: xoá nguyên block <script id="xmas-effects"> này. -->
+<script id="xmas-effects">
 (function(){
   var lastPoint = null;
   document.addEventListener('pointerdown', function(e){
@@ -3403,7 +3415,7 @@ init();
     lastPoint = { x: r.left + r.width / 2, y: r.top + r.height / 2, t: Date.now() };
   }, true);
 
-  var COLORS = ['#F6C445', '#FFD966', '#FF4D4D', '#FF8A3D', '#FFF3DC', '#FF6FA8'];
+  var COLORS = ['#C8102E', '#E8364F', '#2F9E5E', '#7FD49B', '#F2C14E', '#FFFFFF', '#FFFFFF'];
   var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function fireworks(){
@@ -3451,7 +3463,7 @@ init();
     })(start);
   }
 
-  /* ---- Âm thanh khi "Tạo báo cáo buổi học" thành công: chuông vui + vài tiếng pháo nổ lách tách.
+  /* ---- Âm thanh khi "Tạo báo cáo buổi học" thành công: chuông Noel + lục lạc.
      Tự tạo bằng Web Audio, không cần file âm thanh. Trình duyệt chỉ cho phát âm thanh sau khi người
      dùng bấm, nên "mở khoá" âm thanh ngay lúc TA bấm nút Tạo báo cáo, rồi phát khi lưu xong. ---- */
   var audioCtx = null;
@@ -3479,26 +3491,41 @@ init();
       master.gain.value = 0.18;
       master.connect(audioCtx.destination);
 
-      [1046.5, 1318.5, 1568, 2093].forEach(function(f, i){
-        var t = t0 + i * 0.09;
-        var o = audioCtx.createOscillator(), g = audioCtx.createGain();
-        o.type = 'triangle'; o.frequency.value = f;
-        g.gain.setValueAtTime(0.0001, t);
-        g.gain.exponentialRampToValueAtTime(0.9, t + 0.015);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
-        o.connect(g); g.connect(master);
-        o.start(t); o.stop(t + 0.5);
+      // Chuông Noel: câu "Jingle bells, jingle bells, jingle all the way" — âm chuông (nhiều bội âm,
+      // tắt dần) + tiếng lục lạc leng keng rất nhẹ. Không còn tiếng pháo nổ.
+      var E = 659.25, G = 783.99, C = 523.25, D = 587.33;
+      var notes = [
+        [E, 0.00, 0.5], [E, 0.18, 0.5], [E, 0.36, 0.8],
+        [E, 0.72, 0.5], [E, 0.90, 0.5], [E, 1.08, 0.8],
+        [E, 1.44, 0.5], [G, 1.62, 0.5], [C, 1.80, 0.5], [D, 2.07, 0.4], [E, 2.16, 1.4]
+      ];
+      var PARTIALS = [[1, 1], [2, 0.45], [2.76, 0.25], [5.4, 0.12]]; // tỉ lệ bội âm của chuông
+      notes.forEach(function(nt){
+        var t = t0 + nt[1], dur = nt[2];
+        PARTIALS.forEach(function(pt){
+          var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+          o.type = 'sine'; o.frequency.value = nt[0] * pt[0];
+          var peak = 0.55 * pt[1], end = t + dur / (1 + pt[0] * 0.35); // bội âm cao tắt nhanh hơn
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.exponentialRampToValueAtTime(peak, t + 0.008);
+          g.gain.exponentialRampToValueAtTime(0.0001, end);
+          o.connect(g); g.connect(master);
+          o.start(t); o.stop(end + 0.05);
+        });
       });
 
-      var len = Math.floor(audioCtx.sampleRate * 0.06);
-      var buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
-      var d = buf.getChannelData(0);
-      for (var i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3);
-      [0.42, 0.55, 0.63, 0.78].forEach(function(dt){
-        var src = audioCtx.createBufferSource(), g = audioCtx.createGain();
-        src.buffer = buf; g.gain.value = 0.5 + Math.random() * 0.4;
-        src.connect(g); g.connect(master);
-        src.start(t0 + dt + Math.random() * 0.04);
+      // Lục lạc: vài tiếng "ting" cao, ngắn, nhỏ, rải theo nhịp
+      [0, 0.36, 0.72, 1.08, 1.44, 1.80, 2.16].forEach(function(dt){
+        for (var k = 0; k < 3; k++){
+          var t = t0 + dt + k * 0.03 + Math.random() * 0.02;
+          var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+          o.type = 'sine'; o.frequency.value = 3800 + Math.random() * 1600;
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.exponentialRampToValueAtTime(0.08, t + 0.004);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+          o.connect(g); g.connect(master);
+          o.start(t); o.stop(t + 0.12);
+        }
       });
     } catch (e) {}
   }
