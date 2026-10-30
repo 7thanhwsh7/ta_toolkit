@@ -3035,29 +3035,40 @@ function buildReportLines(cls, date){
   scoreGroups.forEach(g => {
     const prefix = `${g.testType}${g.unit ? ' ' + g.unit : ''}${g.totalScore ? ' (' + g.totalScore + ')' : ''}`;
 
-    // Có điểm số cụ thể (VD 15, 7/10...) -> hiện riêng từng người theo "Tên điểm", KHÔNG gộp,
-    // vì điểm số mỗi người thường khác nhau, gộp theo điểm dễ gây nhầm.
-    // Chỉ có ghi chú dạng chữ, không có điểm số (VD "chưa làm bài") -> gộp theo cụm lý do giống
-    // nhau, để báo cáo gọn khi nhiều học sinh cùng 1 lý do.
+    // [SỬA] Gộp theo GHI CHÚ giống nhau cho cả trường hợp CÓ điểm lẫn KHÔNG có điểm.
+    // - Có điểm, không ghi chú            -> hiện "Tên điểm" trên 1 dòng chung như cũ.
+    // - Cùng ghi chú (từ 2 bạn trở lên)   -> gộp: "chưa thuộc kỹ cấu trúc: Anh 5, Nhật 6, Việt"
+    // - Ghi chú chỉ 1 bạn có kèm điểm     -> giữ dạng cũ "Anh 5 (chưa thuộc kỹ cấu trúc)".
+    // Ghi chú được so khớp KHÔNG phân biệt hoa/thường, khoảng trắng thừa, dấu chấm/phẩy cuối câu,
+    // để TA gõ lệch chút xíu (VD "Chưa thuộc kỹ cấu trúc." vs "chưa thuộc kỹ  cấu trúc") vẫn gộp được.
+    const normalizeReasonKey = s => String(s || '').toLowerCase().replace(/\s+/g, ' ').replace(/[.,;:!]+$/, '').trim();
     const scoreParts = [];
-    const noteGroups = new Map(); // lý do -> danh sách tên
+    const noteGroups = new Map(); // key chuẩn hoá -> { label, members: [{ name, score }] }
     g.items.forEach(t => {
-      // [SỬA] Chỉ coi là "có điểm" khi ô Điểm thật sự có chữ số (VD 7, 7.5, 15). TA gõ chữ vào ô
-      // Điểm (VD "không làm bài") thì coi như lý do -> gộp tên theo lý do giống nhau, thay vì lặp
-      // "Trung không làm bài, Thái không làm bài..." cho từng bạn.
+      // Chỉ coi là "có điểm" khi ô Điểm thật sự có chữ số (VD 7, 7.5, 15). TA gõ chữ vào ô Điểm
+      // (VD "không làm bài") thì coi như lý do -> gộp tên theo lý do giống nhau.
       const rawScore = (t.score === undefined || t.score === null) ? '' : String(t.score).trim();
       const hasScore = /\d/.test(rawScore);
-      if (hasScore){
-        const scoreText = t.note ? `${rawScore} (${lowerFirstChar(t.note)})` : rawScore;
-        scoreParts.push(`${t.studentName} ${scoreText}`);
-      } else {
-        const reasonText = [rawScore, t.note].filter(Boolean).join(', ');
-        const reason = lowerFirstChar(reasonText || 'không có điểm');
-        if (!noteGroups.has(reason)) noteGroups.set(reason, []);
-        noteGroups.get(reason).push(t.studentName);
+      const noteText = String(t.note || '').replace(/\s+/g, ' ').trim();
+      if (hasScore && !noteText){
+        scoreParts.push(`${t.studentName} ${rawScore}`);
+        return;
       }
+      const reasonText = hasScore ? noteText : ([rawScore, noteText].filter(Boolean).join(', ') || 'không có điểm');
+      const key = normalizeReasonKey(reasonText);
+      if (!noteGroups.has(key)) noteGroups.set(key, { label: lowerFirstChar(reasonText.replace(/[.,;:!]+$/, '')), members: [] });
+      noteGroups.get(key).members.push({ name: t.studentName, score: hasScore ? rawScore : '' });
     });
-    const noteParts = Array.from(noteGroups.entries()).map(([reason, names]) => `${reason}: ${names.join(', ')}`);
+    const noteParts = [];
+    noteGroups.forEach(grp => {
+      if (grp.members.length === 1 && grp.members[0].score){
+        const m = grp.members[0];
+        scoreParts.push(`${m.name} ${m.score} (${grp.label})`);
+        return;
+      }
+      const names = grp.members.map(m => m.score ? `${m.name} ${m.score}` : m.name);
+      noteParts.push(`${grp.label}: ${names.join(', ')}`);
+    });
     // [SỬA] Điểm số gom thành 1 dòng con (ngăn bằng dấu phẩy), mỗi cụm lý do là 1 dòng con riêng
     const parts = [...(scoreParts.length ? [scoreParts.join(', ')] : []), ...noteParts];
     lines.push(formatReportGroupLine(prefix, parts));
