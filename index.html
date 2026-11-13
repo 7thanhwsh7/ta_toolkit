@@ -1177,6 +1177,16 @@
 
 <div class="toast" id="toast"></div>
 
+<div class="link-modal-overlay" id="confirmModalOverlay">
+  <div class="link-modal">
+    <p id="confirmModalMsg"></p>
+    <div class="link-modal-actions">
+      <button type="button" class="btn-ghost" id="confirmModalCancelBtn">Huỷ, giữ lại</button>
+      <button type="button" class="btn-rust" id="confirmModalOkBtn">Xoá</button>
+    </div>
+  </div>
+</div>
+
 <div class="link-modal-overlay" id="linkModalOverlay" onclick="if(event.target===this) closeLinkModal();">
   <div class="link-modal">
     <p id="linkModalLabel"></p>
@@ -1395,16 +1405,20 @@ function todayStr(){
 /* ============== INIT ============== */
 async function init(){
   document.getElementById('dateInput').value = todayStr();
-  document.getElementById('dateInput').addEventListener('change', updateJournalStoryReminder);
+  document.getElementById('dateInput').addEventListener('change', () => updateJournalStoryReminder(true));
 
   if (CONFIG.API_URL.includes('PASTE_YOUR')) {
     toast('Chưa gắn API_URL — xem hướng dẫn trong file HTML', true);
   }
 
+  // Trong lúc chờ Apps Script, hiện chữ "Đang tải..." trong ô Lớp thay vì để trống (TA tưởng bị lỗi).
+  const clsSel = document.getElementById('classSelect');
+  if (clsSel && !clsSel.options.length) clsSel.innerHTML = '<option value="">⏳ Đang tải danh sách lớp...</option>';
+
   await loadData();
   loadPendingFromLocalStorage();
   renderReminderLines();
-  updateJournalStoryReminder(); // lớp được khôi phục từ phiên trước -> tải ngầm luôn
+  updateJournalStoryReminder(); // lúc mở trang: KHÔNG tải ngầm, đợi TA chọn lớp
   renderSessionLog();
   renderFollowUps();
 }
@@ -1494,7 +1508,7 @@ function renderClassSelect(){
     if (document.getElementById('scoreMultiModeCheck').checked) renderScoreMultiStudentList();
     if (document.getElementById('scoreBatchModeCheck').checked) renderScoreBatchStudentList();
     if (document.getElementById('attendanceMultiModeCheck').checked) renderAttendanceMultiStudentList();
-    updateJournalStoryReminder();
+    updateJournalStoryReminder(true); // TA vừa chọn lớp -> bắt đầu tải ngầm (sau 2 giây)
   };
   refreshTomSelect('classSelect');
 }
@@ -1748,10 +1762,12 @@ function getPrevSessionForgotStory(cls, date){
     const [y, m, d] = date.split('-').map(Number);
     const dates = [];
     for (let i = 1; i <= JOURNAL_LOOKBACK_DAYS; i++) dates.push(localIsoDate(new Date(y, m - 1, d - i)));
-    const results = await Promise.all(dates.map(dt => apiGet('reportDay', { className: cls, date: dt })));
+    // [SỬA TỐC ĐỘ] Trước đây gọi song song cả 7 ngày cùng lúc (7 lệnh reportDay đè lên Apps Script,
+    // làm các lệnh khác phải xếp hàng chờ). Giờ dò TỪNG NGÀY, gần nhất trước, gặp buổi có dữ liệu là
+    // dừng — lớp học 2 buổi/tuần thường chỉ tốn 2–4 lệnh, và các lệnh không chạy chồng lên nhau.
     let anyOk = false;
     for (let i = 0; i < dates.length; i++){
-      const r = results[i];
+      const r = await apiGet('reportDay', { className: cls, date: dates[i] });
       if (!r || r.error) continue;
       anyOk = true;
       const hasData = (r.tests || []).length || (r.errors || []).length || (r.attendance || []).length;
@@ -1767,7 +1783,9 @@ function getPrevSessionForgotStory(cls, date){
   return promise;
 }
 
-async function updateJournalStoryReminder(){
+let journalPrefetchTimer = null;
+async function updateJournalStoryReminder(prefetch){
+  prefetch = prefetch === true; // listener 'change' truyền vào Event -> không tính là bật tải ngầm
   const box = document.getElementById('journalStoryReminder');
   if (!box) return;
   const token = ++journalReminderToken;
@@ -1781,8 +1799,21 @@ async function updateJournalStoryReminder(){
     if (document.getElementById('errorMultiModeCheck').checked) renderErrorMultiStudentList();
   };
   if (!cls || !date){ clear(); return; }
-  // Tải ngầm sẵn ngay khi có lớp + ngày (chưa cần chọn loại lỗi Journal) — tới Bước 5 là có kết quả liền.
-  if (!isJournalErrorCat(cat)){ getPrevSessionForgotStory(cls, date).catch(() => {}); clear(); return; }
+  if (!isJournalErrorCat(cat)){
+    clear();
+    // [SỬA TỐC ĐỘ] Chỉ tải ngầm SAU KHI TA chọn lớp (hoặc đổi ngày khi đã có lớp) — không chạy lúc
+    // vừa mở trang. Chờ 2 giây rồi mới chạy, để TA bấm đổi lớp liên tục thì chỉ lớp cuối cùng được
+    // tải, không chồng nhiều lệnh. Dò tuần tự từng ngày (xem getPrevSessionForgotStory).
+    if (prefetch){
+      clearTimeout(journalPrefetchTimer);
+      journalPrefetchTimer = setTimeout(() => {
+        if (currentClass() === cls && document.getElementById('dateInput').value === date){
+          getPrevSessionForgotStory(cls, date).catch(() => {});
+        }
+      }, 2000);
+    }
+    return;
+  }
 
   box.innerHTML = `<p class="footnote" style="font-style:italic;margin:6px 0 0;">Đang kiểm tra buổi trước có ai quên đem truyện...</p>`;
   let info;
@@ -2587,8 +2618,11 @@ async function deleteSessionEntry(localId){
   if (idx === -1) return;
   const entry = STATE.sessionLog[idx];
 
+  const itemHtml = `<b>${esc(sessionGroupTitle(entry))}</b><br>${esc(sessionItemText(entry))}`;
+
   if (entry.status === 'pending'){
-    if (!confirm(`Xoá mục "${entry.label}"?`)) return;
+    const ok = await confirmDialog(`Xoá mục này?<br><br>${itemHtml}`, '🗑 Xoá mục này');
+    if (!ok) return;
     STATE.pendingBatch[entry.type] = STATE.pendingBatch[entry.type].filter(x => x.localId !== localId);
     STATE.sessionLog.splice(idx, 1);
     STATE.pendingFollowUps = STATE.pendingFollowUps.filter(f => f.id !== localId);
@@ -2599,9 +2633,13 @@ async function deleteSessionEntry(localId){
     return;
   }
 
-  if (!confirm(`Xoá mục "${entry.label}"? Sẽ xoá khỏi Sheet luôn.`)) return;
+  const okSubmitted = await confirmDialog(
+    `Xoá mục này?<br><br>${itemHtml}<br><br><span style="color:var(--rust);font-weight:700;">⚠️ Mục này ĐÃ LƯU trên hệ thống — xoá sẽ xoá luôn trên hệ thống, không hoàn tác được.</span>`,
+    '🗑 Xoá luôn trên hệ thống'
+  );
+  if (!okSubmitted) return;
 
-  await apiPost('removeLogEntry', {
+  const res = await apiPost('removeLogEntry', {
     sheetName: entry.sheetName,
     id: entry.id,
     className: entry.className,
@@ -2609,6 +2647,12 @@ async function deleteSessionEntry(localId){
     pivotColumn: entry.pivotColumn,
     entryText: entry.entryText
   });
+  // Server báo lỗi (mạng chập chờn...) thì KHÔNG bỏ mục khỏi màn hình — tránh TA tưởng đã xoá
+  // trong khi dữ liệu vẫn còn trên Sheet.
+  if (!res || res.success === false){
+    toast('Chưa xoá được trên hệ thống: ' + (res && res.error ? res.error : 'lỗi kết nối') + ' — thử lại', true);
+    return;
+  }
 
   STATE.submittedToday[entry.type] = STATE.submittedToday[entry.type].filter(x => x.id !== entry.id);
   STATE.sessionLog.splice(idx, 1);
@@ -2616,6 +2660,29 @@ async function deleteSessionEntry(localId){
   renderSessionLog();
   renderFollowUps();
   toast('Đã xoá — TA nhập lại cho đúng nhé');
+}
+
+/* ============== HỘP XÁC NHẬN XOÁ (thay cho confirm() của trình duyệt) ==============
+   confirm() mặc định dễ bấm nhầm và một số trình duyệt trong app (Zalo, Messenger...) không hiện
+   hoặc tự bỏ qua — nên dùng hộp xác nhận riêng trong trang. Bấm ra ngoài hộp = Huỷ. */
+function confirmDialog(messageHtml, okLabel){
+  return new Promise(resolve => {
+    const overlay = document.getElementById('confirmModalOverlay');
+    const okBtn = document.getElementById('confirmModalOkBtn');
+    const cancelBtn = document.getElementById('confirmModalCancelBtn');
+    document.getElementById('confirmModalMsg').innerHTML = messageHtml;
+    okBtn.textContent = okLabel || 'Xoá';
+    const close = (result) => {
+      overlay.classList.remove('show');
+      okBtn.onclick = null; cancelBtn.onclick = null; overlay.onclick = null;
+      resolve(result);
+    };
+    okBtn.onclick = () => close(true);
+    cancelBtn.onclick = () => close(false);
+    overlay.onclick = (e) => { if (e.target === overlay) close(false); };
+    overlay.classList.add('show');
+    cancelBtn.focus();
+  });
 }
 
 /* ============== ACTIONS: thêm mới ============== */
