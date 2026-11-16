@@ -856,6 +856,16 @@
 
     <div class="divider-label" style="margin-bottom:10px;"></div>
 
+    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px;">
+      <label class="checkbox-row note-action" id="attachPadletRow">
+        <input type="checkbox" id="attachPadletCheck" onchange="toggleHwLinkInReport('padlet', this.checked)"> 📎 Chèn link Padlet <span class="hw-link-na" style="display:none;font-weight:400;font-style:italic;">— lớp này chưa có link</span>
+      </label>
+      <label class="checkbox-row note-action" id="attachQuizletRow">
+        <input type="checkbox" id="attachQuizletCheck" onchange="toggleHwLinkInReport('vocab', this.checked)"> 📎 Chèn link Quizlet <span class="hw-link-na" style="display:none;font-weight:400;font-style:italic;">— cuốn Từ vựng của lớp này chưa có link</span>
+      </label>
+      <p class="footnote" style="margin:0;">Tick trước hoặc sau khi tạo báo cáo đều được — tick thì chèn link vào báo cáo, bỏ tick thì gỡ link ra. Dòng nhạt = lớp/cuốn này chưa có link trên Sheet.</p>
+    </div>
+
     <button class="btn-gold" id="generateReportBtn" onclick="generateDayReport()" style="font-size:15px;padding:14px 24px;">🚀 Tạo báo cáo buổi học</button>
     <textarea id="dayReportOutput" style="margin-top:14px;" placeholder="Báo cáo sẽ hiện ở đây..."></textarea>
     <div style="margin-top:10px;">
@@ -985,7 +995,7 @@
     </div>
 
     <!-- Danh sách key/link lấy từ tab "input_LINK KEY & TỪ VỰNG" bên Sheet (xem renderKeyView) -->
-    <div id="keyLinksBox"><p class="empty-note" style="color:var(--xmas-gold,#F2C14E);font-style:normal;font-weight:600;">⏳ Đang tải danh sách key từ Sheet, chờ vài giây nhé...</p></div>
+    <div id="keyLinksBox"><p class="empty-note" style="color:var(--xmas-gold,#F2C14E);font-style:normal;font-weight:600;">⏳ Đang tải danh sách key, chờ vài giây nhé...</p></div>
 
   </div>
 
@@ -1330,12 +1340,14 @@ async function loadData(){
   STATE.syllabusBooks = data.syllabusBooks || {};
   STATE.bookOrder = data.bookOrder || {};
   STATE.keyLinks = data.keyLinks || [];
+  keyLinksStatus = ('keyLinks' in data) ? 'loaded' : 'oldServer';
 
   try {
     renderAll();
     if (document.getElementById('screen-manage').style.display !== 'none') renderManagementView();
     if (document.getElementById('screen-curriculum').style.display !== 'none') renderCurriculumView();
     renderKeyView();
+    updateHwLinkOptions();
   } catch(err){
     console.error('loadData: dữ liệu đã tải được nhưng lỗi khi render giao diện:', err);
     toast('Đã tải được dữ liệu nhưng lỗi hiển thị: ' + (err && err.message ? err.message : err), true);
@@ -1345,7 +1357,8 @@ async function loadData(){
 }
 
 async function refreshData(){
-  toast('Đang tải lại danh sách từ Sheet...');
+  toast('Đang tải lại danh sách...');
+  if (keyLinksStatus !== 'loaded'){ keyLinksStatus = 'loading'; renderKeyView(); }
   const ok = await loadData();
   if (ok) toast('Đã cập nhật danh sách mới nhất');
 }
@@ -1389,6 +1402,7 @@ function renderClassSelect(){
     if (document.getElementById('scoreBatchModeCheck').checked) renderScoreBatchStudentList();
     if (document.getElementById('attendanceMultiModeCheck').checked) renderAttendanceMultiStudentList();
     updateJournalStoryReminder(true); // TA vừa chọn lớp -> bắt đầu tải ngầm (sau 2 giây)
+    updateHwLinkOptions();
   };
   refreshTomSelect('classSelect');
 }
@@ -2115,7 +2129,121 @@ function toggleHwStoryOption(cb){
   document.querySelectorAll('.hw-story-cb').forEach(other => { if (other !== cb) other.checked = false; });
 }
 
+// [MỚI] Đính sẵn link vào Homework khi TA tick ô ở Bước 8:
+// - Quizlet (mục "vocab"): lấy link dòng Mục "Từ vựng" có Tên nút (hoặc Tên sách) trùng với cuốn
+//   lớp đang học — cuốn lấy từ input_LỘ TRÌNH BTVN dòng Môn = Vocab. Lớp không có dòng Vocab -> bỏ qua.
+// - Padlet (mục "padlet"): lấy link dòng Mục "Padlet" có Tên sách (hoặc Tên nút) trùng tên lớp.
+// So khớp không phân biệt hoa/thường, khoảng trắng thừa. Không tìm thấy link thì bỏ qua + nhắc TA.
+let hwMissingLinks = [];
+function normLinkKey(s){ return String(s || '').normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim(); }
+
+// Mục chỉ cần CHỨA từ khoá (không cần trùng y hệt) — VD Mục "Quizlet Từ vựng Reading" vẫn được
+// nhận là mục Quizlet; Mục "Padlet lớp" vẫn được nhận là mục Padlet.
+const HW_LINK_SECTION_KEYWORDS = { 'Từ vựng': ['từ vựng', 'quizlet'], 'Padlet': ['padlet'] };
+
+function findKeyLink(sectionName, matchName){
+  const keywords = (HW_LINK_SECTION_KEYWORDS[sectionName] || [sectionName]).map(normLinkKey);
+  const target = normLinkKey(matchName);
+  if (!target) return '';
+  const hit = (STATE.keyLinks || []).find(lk => {
+    const sec = normLinkKey(lk.section);
+    return keywords.some(k => sec.includes(k))
+      && (normLinkKey(lk.label) === target || normLinkKey(lk.book) === target);
+  });
+  return hit ? hit.url : '';
+}
+
+function getClassBookName(cls, subject){
+  const row = STATE.homeworkProgress.find(p => p.className === cls && p.subject === subject);
+  return row && row.bookName ? String(row.bookName) : '';
+}
+
+const HW_LINK_CHECK_ID = { vocab: 'attachQuizletCheck', padlet: 'attachPadletCheck' };
+const HW_LINK_NAME = { vocab: 'Quizlet', padlet: 'Padlet' };
+// Ghi nhớ dòng Homework của Từ vựng/Padlet trong báo cáo vừa tạo + link tương ứng, để TA tick/bỏ
+// tick SAU khi đã tạo báo cáo thì chèn/gỡ đúng dòng "Link: ..." mà KHÔNG tạo lại báo cáo (giữ nguyên
+// những gì TA đã sửa tay trong ô báo cáo).
+let lastHwLinkTargets = {}; // { vocab: { line, url, missing }, padlet: {...} }
+
+// Tìm link cho 1 mục, không phụ thuộc ô tick. Trả { url, missing } (missing = mô tả nếu thiếu link).
+function lookupHwLink(itemId){
+  const cls = document.getElementById('classSelect').value;
+  if (!cls) return { url: '', missing: '' };
+  if (itemId === 'vocab'){
+    // Chỉ lấy theo dòng Môn = Vocab. Lớp không có dòng Vocab -> không chèn link, không báo lỗi.
+    const book = getClassBookName(cls, 'Vocab');
+    if (!book) return { url: '', missing: '', noVocab: true };
+    const url = findKeyLink('Từ vựng', book);
+    return { url, missing: url ? '' : `Quizlet cuốn "${book}"` };
+  }
+  if (itemId === 'padlet'){
+    const url = findKeyLink('Padlet', cls);
+    return { url, missing: url ? '' : `Padlet lớp "${cls}"` };
+  }
+  return { url: '', missing: '' };
+}
+
+function isHwLinkChecked(itemId){
+  const id = HW_LINK_CHECK_ID[itemId];
+  const el = id ? document.getElementById(id) : null;
+  return !!(el && el.checked);
+}
+
+function resizeReportBox(box){
+  box.style.height = 'auto';
+  box.style.height = box.scrollHeight + 'px';
+}
+
+// Làm nhạt + khoá ô tick khi lớp đang chọn chưa có link (Padlet theo lớp, Quizlet theo cuốn Vocab).
+function updateHwLinkOptions(){
+  [['padlet', 'attachPadletRow', 'attachPadletCheck'], ['vocab', 'attachQuizletRow', 'attachQuizletCheck']].forEach(([itemId, rowId, cbId]) => {
+    const row = document.getElementById(rowId), cb = document.getElementById(cbId);
+    if (!row || !cb) return;
+    const has = !!lookupHwLink(itemId).url;
+    row.style.opacity = has ? '' : '0.45';
+    row.style.cursor = has ? '' : 'not-allowed';
+    cb.disabled = !has;
+    if (!has) cb.checked = false;
+    const na = row.querySelector('.hw-link-na');
+    if (na) na.style.display = (has || !document.getElementById('classSelect').value) ? 'none' : 'inline';
+  });
+}
+
+function toggleHwLinkInReport(itemId, checked){
+  const box = document.getElementById('dayReportOutput');
+  if (!box || !box.value.trim()) return; // chưa tạo báo cáo -> ô tick sẽ áp dụng lúc bấm tạo
+  const t = lastHwLinkTargets[itemId];
+  const name = HW_LINK_NAME[itemId];
+  // Tick lại sau khi vừa bổ sung link trên Sheet + bấm Làm mới -> tra lại link mới nhất (không bắt
+  // TA tạo lại báo cáo). Bỏ tick thì giữ link cũ để gỡ đúng dòng đã chèn.
+  if (t && checked){
+    const fresh = lookupHwLink(itemId);
+    t.url = fresh.url; t.missing = fresh.missing; t.noVocab = !!fresh.noVocab;
+  }
+  if (!t){
+    if (checked) toast(`Báo cáo hiện tại không có mục ${itemId === 'vocab' ? 'Học thuộc Từ vựng' : 'Thu âm padlet'}`, true);
+    return;
+  }
+  if (!t.url) return; // chưa có link -> không chèn, không báo (ô tick đã hiện nhạt)
+  const linkLine = 'Link: ' + t.url;
+  const lines = box.value.split('\n');
+  const idx = lines.findIndex(l => l.trim() === t.line.trim());
+  if (idx === -1){
+    toast(`Không tìm thấy dòng "${t.line}" trong báo cáo (có thể đã sửa tay) — thêm link tay nhé`, true);
+    return;
+  }
+  const hasLink = (lines[idx + 1] || '').trim() === linkLine;
+  if (checked && !hasLink) lines.splice(idx + 1, 0, linkLine);
+  else if (!checked && hasLink) lines.splice(idx + 1, 1);
+  else return;
+  box.value = lines.join('\n');
+  resizeReportBox(box);
+  toast(checked ? `Đã chèn link ${name}` : `Đã gỡ link ${name}`);
+}
+
 function buildHomeworkText(date){
+  hwMissingLinks = [];
+  lastHwLinkTargets = {};
   if (!selectedHomeworkGroup) return '';
   const group = HOMEWORK_TEMPLATES[selectedHomeworkGroup];
   const items = [];
@@ -2128,7 +2256,17 @@ function buildHomeworkText(date){
     // lộ trình lên hệ thống (advanceHomeworkUnits) vẫn dùng giá trị gốc có ngoặc riêng, không đụng.
     const displayUnit = unit.replace(/^\[|\]$/g, '');
     const note = document.getElementById('hw_note_' + item.id).value.trim();
-    items.push(item.build(displayUnit, note));
+    const text = item.build(displayUnit, note);
+    if (HW_LINK_CHECK_ID[item.id]){
+      const found = lookupHwLink(item.id);
+      // Dòng sau khi đánh số + chuẩn hoá " - " giống y như lúc hiện trong ô báo cáo
+      lastHwLinkTargets[item.id] = { line: `${items.length + 1}. ${text}`.replace(/ - /g, ' '), url: found.url, missing: found.missing, noVocab: !!found.noVocab };
+      if (isHwLinkChecked(item.id)){
+        if (found.url){ items.push(`${text}\nLink: ${found.url}`); return; }
+        if (found.missing) hwMissingLinks.push(found.missing);
+      }
+    }
+    items.push(text);
   });
 
   // Các dòng bài tập bổ sung tự do — mỗi ô nhập (không rỗng) thành 1 mục riêng
@@ -3163,6 +3301,7 @@ async function generateDayReport(){
     const lines = buildReportLines(cls, date);
 
     let out = '';
+    lastHwLinkTargets = {};
     if (document.getElementById('homeworkEnableCheck').checked){
       const hwText = buildHomeworkText(date);
       if (hwText) out += hwText + '\n\n';
@@ -3251,6 +3390,7 @@ function showScreen(name){
   if (name === 'manage') renderManagementView();
   if (name === 'curriculum') renderCurriculumView();
   if (name === 'key') renderKeyView();
+  if (name === 'dataEntry') updateHwLinkOptions();
 }
 
 // [MỚI] Màn "Chương trình học — để báo in sách": Grammar/Speaking là danh sách cố định (đầu sách
@@ -3271,17 +3411,35 @@ function renderCurriculumBookList(subjectLabel, containerId){
 // [MỚI] Màn "Key chấm bài" — dựng từ STATE.keyLinks (tab "input_LINK KEY & TỪ VỰNG" bên Sheet).
 // Nhóm theo Mục (đúng thứ tự xuất hiện trên Sheet), trong mỗi Mục gộp các dòng cùng Tên sách thành
 // 1 hàng nhiều nút. Muốn thêm/sửa link: sửa thẳng trên Sheet, không cần sửa file này.
+// 'loading' = đang chờ Apps Script trả dữ liệu lần đầu; 'error' = tải lỗi; 'oldServer' = Apps Script
+// chưa deploy bản có tab link (không trả keyLinks); 'loaded' = đã có dữ liệu.
+let keyLinksStatus = 'loading';
+
 function renderKeyView(){
   const box = document.getElementById('keyLinksBox');
   if (!box) return;
+  if (keyLinksStatus === 'loading'){
+    box.innerHTML = `<p class="empty-note" style="color:var(--xmas-gold,#F2C14E);font-style:normal;font-weight:600;">⏳ Đang tải danh sách key, chờ vài giây nhé...</p>`;
+    return;
+  }
+  if (keyLinksStatus === 'error' && !(STATE.keyLinks || []).length){
+    box.innerHTML = `<p class="empty-note" style="color:#FFB4A8;font-style:normal;font-weight:600;">⚠️ Chưa tải được danh sách key — bấm "🔄 Làm mới danh sách" ở trên để thử lại.</p>`;
+    return;
+  }
+  if (keyLinksStatus === 'oldServer'){
+    box.innerHTML = `<p class="empty-note" style="color:#FFB4A8;font-style:normal;font-weight:600;">⚠️ Apps Script chưa cập nhật bản mới (chưa có tab link) — báo quản lý deploy lại Code.gs.</p>`;
+    return;
+  }
   const links = STATE.keyLinks || [];
-  if (!links.length){
-    box.innerHTML = `<p class="empty-note" style="color:var(--input-text-dim);">Chưa có link nào ở tab "input_LINK KEY &amp; TỪ VỰNG" bên Sheet.</p>`;
+  // Dòng tick "Ẩn khỏi Key & Link" bên Sheet -> không hiện ở màn này (vẫn dùng để chèn link Homework)
+  if (!links.some(lk => !lk.hidden)){
+    box.innerHTML = `<p class="empty-note" style="color:var(--input-text-dim);">Chưa có link nào.</p>`;
     return;
   }
   const sections = [];
   const secMap = new Map();
   links.forEach((lk, i) => {
+    if (lk.hidden) return;
     if (!secMap.has(lk.section)){
       const sec = { title: lk.section, books: [], bookMap: new Map() };
       secMap.set(lk.section, sec);
@@ -3320,9 +3478,8 @@ function renderKeyView(){
 // Tải lỗi (mạng/Apps Script) mà chưa từng có danh sách -> đổi dòng "Đang tải..." thành báo lỗi,
 // để TA không ngồi chờ mãi. Đã có danh sách cũ thì giữ nguyên, chỉ báo toast.
 function showKeyLoadError(){
-  const box = document.getElementById('keyLinksBox');
-  if (!box || (STATE.keyLinks && STATE.keyLinks.length)) return;
-  box.innerHTML = `<p class="empty-note" style="color:#FFB4A8;font-style:normal;font-weight:600;">⚠️ Chưa tải được danh sách key — bấm "🔄 Làm mới danh sách" ở trên để thử lại.</p>`;
+  if (keyLinksStatus !== 'loaded') keyLinksStatus = 'error';
+  renderKeyView();
 }
 
 function openKeyLink(i){
@@ -3352,12 +3509,25 @@ function renderMgmtStudentList(){
   const badge = document.getElementById('classSizeBadge');
   badge.textContent = cls ? `Sĩ số: ${list.length}` : '';
 
-  if (!list.length){ box.innerHTML = `<p class="empty-note">Lớp này chưa có học sinh.</p>`; return; }
-  box.innerHTML = list.map((s, i) => `
+  const listHtml = list.length
+    ? list.map((s, i) => `
     <div class="mgmt-item">
       <span>${esc(s.name)}</span>
       <button class="btn-ghost btn-sm" onclick="mgmtDeleteStudent(${i},'${escAttr(s.className)}','${escAttr(s.name)}')">Xoá</button>
+    </div>`).join('')
+    : `<p class="empty-note">Lớp này chưa có học sinh.</p>`;
+  // Học sinh vừa xoá của lớp này (trong phiên đang mở) — để TA biết ai vừa bị xoá và thêm lại nhanh
+  const deletedHtml = recentlyDeletedStudents
+    .map((d, i) => ({ d, i }))
+    .filter(x => x.d.className === cls)
+    .map(x => `
+    <div class="mgmt-item" style="opacity:.75;">
+      <span style="text-decoration:line-through;">${esc(x.d.name)}</span>
+      <button class="btn-ghost btn-sm" onclick="mgmtRestoreStudent(${x.i})">↩ Thêm lại</button>
     </div>`).join('');
+  box.innerHTML = listHtml + (deletedHtml
+    ? `<div class="divider-label" style="margin:18px 0 6px;">Vừa xoá (bấm "Thêm lại" nếu lỡ tay)</div>${deletedHtml}`
+    : '');
 }
 
 async function mgmtAddStudent(){
@@ -3374,20 +3544,49 @@ async function mgmtAddStudent(){
   toast('Đã thêm học sinh ' + val);
 }
 
+// [SỬA] Xoá học sinh: dùng hộp xác nhận riêng trong trang (confirm() của trình duyệt bị Zalo/
+// Messenger... bỏ qua -> bấm nhầm là xoá luôn). Học sinh vừa xoá được ghi lại ở cuối danh sách lớp
+// kèm nút "↩ Thêm lại" để TA khôi phục nếu lỡ tay (trong phiên đang mở, chưa tải lại trang).
+let recentlyDeletedStudents = []; // [{ name, className }]
+
 async function mgmtDeleteStudent(index, className, name){
-  if (!confirm(`Xoá học sinh "${name}"?`)) return;
+  const ok = await confirmDialog(
+    `Xoá học sinh <b>${esc(name)}</b> khỏi lớp <b>${esc(className)}</b>?<br><br><span style="color:var(--rust);font-weight:700;">⚠️ Kiểm tra kỹ đúng tên trước khi xoá.</span>`,
+    '🗑 Xoá học sinh'
+  );
+  if (!ok) return;
   // Dùng vị trí (index) trong danh sách của lớp để xoá đúng 1 người — không dùng tên,
   // để tránh trường hợp 2 học sinh trùng tên (VD "Quân" và "Quân") bị xoá nhầm cả 2.
-  await apiPost('deleteStudent', { studentIndex: index, className });
+  const res = await apiPost('deleteStudent', { studentIndex: index, className });
+  if (!res || res.success === false){
+    toast('Chưa xoá được: ' + (res && res.error ? res.error : 'lỗi kết nối') + ' — thử lại', true);
+    return;
+  }
   const classList = STATE.students.filter(s => s.className === className);
   const target = classList[index];
   if (target){
     const globalIdx = STATE.students.indexOf(target);
     if (globalIdx !== -1) STATE.students.splice(globalIdx, 1);
   }
+  recentlyDeletedStudents.unshift({ name, className });
   renderAll();
   renderManagementView();
   toast('Đã xoá học sinh ' + name);
+}
+
+async function mgmtRestoreStudent(i){
+  const item = recentlyDeletedStudents[i];
+  if (!item) return;
+  const res = await apiPost('addStudent', { studentName: item.name, className: item.className });
+  if (res && res.success === false){
+    toast('Chưa thêm lại được: ' + (res.error || 'lỗi kết nối') + ' — thử lại', true);
+    return;
+  }
+  STATE.students.push({ name: item.name, className: item.className });
+  recentlyDeletedStudents.splice(i, 1);
+  renderAll();
+  renderManagementView();
+  toast('Đã thêm lại học sinh ' + item.name);
 }
 
 /* ============== THU GỌN TỪNG BƯỚC (ACCORDION) ============== */
