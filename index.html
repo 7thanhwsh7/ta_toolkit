@@ -1339,6 +1339,7 @@ async function loadData(){
   STATE.homeworkProgress = data.homeworkProgress || [];
   STATE.syllabusBooks = data.syllabusBooks || {};
   STATE.bookOrder = data.bookOrder || {};
+  curriculumStatus = 'loaded';
   STATE.keyLinks = data.keyLinks || [];
   keyLinksStatus = ('keyLinks' in data) ? 'loaded' : 'oldServer';
 
@@ -1359,6 +1360,11 @@ async function loadData(){
 async function refreshData(){
   toast('Đang tải lại danh sách...');
   if (keyLinksStatus !== 'loaded'){ keyLinksStatus = 'loading'; renderKeyView(); }
+  if (curriculumStatus !== 'loaded'){
+    curriculumStatus = 'loading';
+    const cur = document.getElementById('screen-curriculum');
+    if (cur && cur.style.display !== 'none') renderCurriculumView();
+  }
   const ok = await loadData();
   if (ok) toast('Đã cập nhật danh sách mới nhất');
 }
@@ -3402,9 +3408,20 @@ function renderCurriculumView(){
   renderCurriculumBookList('Reading', 'curriculumReadingList');
 }
 
+// 'loading' = đang chờ Apps Script trả dữ liệu; 'error' = tải lỗi; 'loaded' = đã có dữ liệu.
+let curriculumStatus = 'loading';
+
 function renderCurriculumBookList(subjectLabel, containerId){
   const box = document.getElementById(containerId);
-  const books = STATE.bookOrder[subjectLabel] || [];
+  const books = (STATE.bookOrder && STATE.bookOrder[subjectLabel]) || [];
+  if (!books.length && curriculumStatus === 'loading'){
+    box.innerHTML = `<p class="empty-note" style="color:var(--xmas-gold,#F2C14E);font-style:normal;font-weight:600;">⏳ Đang tải danh sách sách, chờ vài giây nhé...</p>`;
+    return;
+  }
+  if (!books.length && curriculumStatus === 'error'){
+    box.innerHTML = `<p class="empty-note" style="color:#FFB4A8;font-style:normal;font-weight:600;">⚠️ Chưa tải được danh sách sách — tải lại trang để thử lại.</p>`;
+    return;
+  }
   if (!books.length){ box.innerHTML = `<p class="empty-note">Chưa có dữ liệu đầu sách ${esc(subjectLabel)} ở tab "Đầu sách BTVN".</p>`; return; }
   box.innerHTML = `<ul class="curriculum-list">${books.map(name => `<li>${esc(name)}</li>`).join('')}</ul>`;
 }
@@ -3480,6 +3497,9 @@ function renderKeyView(){
 function showKeyLoadError(){
   if (keyLinksStatus !== 'loaded') keyLinksStatus = 'error';
   renderKeyView();
+  if (curriculumStatus !== 'loaded') curriculumStatus = 'error';
+  const cur = document.getElementById('screen-curriculum');
+  if (cur && cur.style.display !== 'none') renderCurriculumView();
 }
 
 function openKeyLink(i){
